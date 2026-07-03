@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body { background: #0b0d0f; color: #e8ecef; }
+body { font-family: 'Hanken Grotesk', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+.mono { font-family: 'Spline Sans Mono', ui-monospace, monospace; }
+
+/* lifted panel */
+.panel { background: #15181c; border: 1px solid #242a30; border-radius: 14px;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 8px 24px rgba(0,0,0,0.35); }
+.btn { border-radius: 10px; padding: 0.5rem 0.9rem; font-weight: 600; transition: .15s; }
+.btn-primary { background: #e8ecef; color: #0b0d0f; }
+.btn-primary:hover { background: #fff; }
+.btn-ghost { border: 1px solid #242a30; color: #e8ecef; }
+.btn-ghost:hover { background: #1b1f24; }
+.input { background: #0e1114; border: 1px solid #242a30; border-radius: 10px;
+  padding: 0.55rem 0.75rem; color: #e8ecef; width: 100%; }
+.input:focus { outline: none; border-color: #3a444d; }
+.chip { font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 999px; border: 1px solid #242a30; }
