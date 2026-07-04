@@ -29,6 +29,8 @@ export default function Prospects() {
   const [open, setOpen] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState<Partial<Prospect>>({ name: "", state: "prospect" });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<Partial<Prospect>>({});
 
   const load = useCallback(async () => {
     const org = await getOrgId(); if (!org) return;
@@ -55,11 +57,21 @@ export default function Prospects() {
   async function setState(id: string, state: ProspectState) {
     await supabase.from("prospects").update({ state }).eq("id", id); load();
   }
-  function editField(id: string, field: "email" | "phone", value: string) {
-    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
+  function startEdit(r: Prospect) { setEditingId(r.id); setEditDraft({ ...r }); setOpen(null); }
+  function cancelEdit() { setEditingId(null); setEditDraft({}); }
+  async function saveEdit() {
+    if (!editingId || !editDraft.name) return;
+    const { id, org_id, owner_id, created_at, updated_at, state, last_touched, ...patch } = editDraft as any;
+    await supabase.from("prospects").update(patch).eq("id", editingId);
+    setEditingId(null); setEditDraft({}); load();
   }
-  async function saveField(id: string, field: "email" | "phone", value: string) {
-    await supabase.from("prospects").update({ [field]: value }).eq("id", id);
+  async function deleteProspect(id: string) {
+    if (!window.confirm("Delete this prospect? This also removes their interaction history and list memberships. This can't be undone.")) return;
+    await supabase.from("prospects").delete().eq("id", id);
+    setSelected((s) => { const n = new Set(s); n.delete(id); return n; });
+    if (open === id) setOpen(null);
+    if (editingId === id) cancelEdit();
+    load();
   }
   async function addToList(prospectId: string, listId: string) {
     if (!listId) return;
@@ -151,6 +163,10 @@ export default function Prospects() {
                 <button className="btn btn-ghost text-sm" onClick={() => setOpen(open === r.id ? null : r.id)}>
                   {open === r.id ? "Close" : "Reach out"}
                 </button>
+                <button className="btn btn-ghost text-sm" onClick={() => (editingId === r.id ? cancelEdit() : startEdit(r))}>
+                  {editingId === r.id ? "Cancel" : "Edit"}
+                </button>
+                <button className="btn btn-ghost text-sm" onClick={() => deleteProspect(r.id)}>Delete</button>
               </div>
 
               <div className="flex items-center gap-1 flex-wrap mt-2">
@@ -173,16 +189,36 @@ export default function Prospects() {
               </div>
 
               {open === r.id && (
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {r.linkedin_url && <a href={r.linkedin_url} target="_blank" className="mono text-xs text-muted underline block sm:col-span-2">open LinkedIn ↗</a>}
-                  <input className="input text-sm" placeholder="email" value={r.email ?? ""}
-                    onChange={(e) => editField(r.id, "email", e.target.value)}
-                    onBlur={(e) => saveField(r.id, "email", e.target.value)} />
-                  <input className="input text-sm" placeholder="phone" value={r.phone ?? ""}
-                    onChange={(e) => editField(r.id, "phone", e.target.value)}
-                    onBlur={(e) => saveField(r.id, "phone", e.target.value)} />
-                  <div className="sm:col-span-2">
-                    <LogInteraction prospectId={r.id} compact onLogged={load} />
+                <div className="mt-3 grid gap-2">
+                  <div className="flex gap-3 flex-wrap text-xs mono text-muted">
+                    {r.linkedin_url && <a href={r.linkedin_url} target="_blank" className="underline">open LinkedIn ↗</a>}
+                    {r.email && <a href={`mailto:${r.email}`} className="underline">{r.email}</a>}
+                    {r.phone && <a href={`tel:${r.phone}`} className="underline">{r.phone}</a>}
+                  </div>
+                  <LogInteraction prospectId={r.id} compact onLogged={load} />
+                </div>
+              )}
+
+              {editingId === r.id && (
+                <div className="mt-3 panel p-3 grid gap-2 sm:grid-cols-3">
+                  <input className="input" placeholder="name*" value={editDraft.name ?? ""} onChange={(e) => setEditDraft({ ...editDraft, name: e.target.value })} />
+                  <input className="input" placeholder="title" value={editDraft.title ?? ""} onChange={(e) => setEditDraft({ ...editDraft, title: e.target.value })} />
+                  <input className="input" placeholder="company" value={editDraft.company ?? ""} onChange={(e) => setEditDraft({ ...editDraft, company: e.target.value })} />
+                  <input className="input" placeholder="sector" value={editDraft.sector ?? ""} onChange={(e) => setEditDraft({ ...editDraft, sector: e.target.value })} />
+                  <input className="input" placeholder="region" value={editDraft.region ?? ""} onChange={(e) => setEditDraft({ ...editDraft, region: e.target.value })} />
+                  <input className="input" placeholder="tier" value={editDraft.tier ?? ""} onChange={(e) => setEditDraft({ ...editDraft, tier: e.target.value })} />
+                  <input className="input" placeholder="linkedin url" value={editDraft.linkedin_url ?? ""} onChange={(e) => setEditDraft({ ...editDraft, linkedin_url: e.target.value })} />
+                  <input className="input" placeholder="email" value={editDraft.email ?? ""} onChange={(e) => setEditDraft({ ...editDraft, email: e.target.value })} />
+                  <input className="input" placeholder="phone" value={editDraft.phone ?? ""} onChange={(e) => setEditDraft({ ...editDraft, phone: e.target.value })} />
+                  <textarea className="input sm:col-span-3" placeholder="notes" value={editDraft.notes ?? ""} onChange={(e) => setEditDraft({ ...editDraft, notes: e.target.value })} />
+                  <label className="flex items-center gap-2 text-sm sm:col-span-3">
+                    <input type="checkbox" checked={editDraft.south_america_relevant ?? false}
+                      onChange={(e) => setEditDraft({ ...editDraft, south_america_relevant: e.target.checked })} />
+                    South America relevant
+                  </label>
+                  <div className="sm:col-span-3 flex gap-2">
+                    <button className="btn btn-primary" onClick={saveEdit}>Save</button>
+                    <button className="btn btn-ghost" onClick={cancelEdit}>Cancel</button>
                   </div>
                 </div>
               )}
