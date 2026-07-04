@@ -4,11 +4,16 @@
 // print dialog, where "Save as PDF" is a destination like any printer
 export default function PrintButton() {
   return (
-    <button
-      onClick={() => window.print()}
-      className="print:hidden inline-flex items-center gap-2 mt-6 px-4 py-2 rounded-lg border border-neutral-300 text-sm font-medium hover:bg-neutral-50"
-    >
-      Print / Save as PDF
-    </button>
+    <div className="print:hidden mt-6">
+      <button
+        onClick={() => window.print()}
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-neutral-300 text-sm font-medium hover:bg-neutral-50"
+      >
+        Print / Save as PDF
+      </button>
+      <p className="mt-2 text-xs text-neutral-500">
+        For a clean file, uncheck "Headers and footers" under "More settings" in the print dialog.
+      </p>
+    </div>
   );
 }
