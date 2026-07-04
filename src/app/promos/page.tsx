@@ -122,6 +122,7 @@ export default function Promos() {
           <input className="input" placeholder="headline" value={draft.headline ?? ""} onChange={(e) => setDraft({ ...draft, headline: e.target.value })} />
           <textarea className="input" placeholder="body copy" value={draft.body_copy ?? ""} onChange={(e) => setDraft({ ...draft, body_copy: e.target.value })} />
           <input className="input" placeholder="CTA link url" value={draft.link_url ?? ""} onChange={(e) => setDraft({ ...draft, link_url: e.target.value })} />
+          <input className="input" placeholder="CTA text (e.g. Book a shoot)" value={draft.cta_text ?? ""} onChange={(e) => setDraft({ ...draft, cta_text: e.target.value })} />
 
           <div className="mono text-xs text-muted mt-2">style</div>
           <div className="flex gap-2 flex-wrap">

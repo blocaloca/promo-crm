@@ -11,7 +11,7 @@ export interface Prospect {
 }
 export interface Promo {
   id: string; name: string; template_key: string; aspect_ratio?: string;
-  headline?: string; body_copy?: string; link_url?: string;
+  headline?: string; body_copy?: string; link_url?: string; cta_text?: string;
   sector?: string[]; angle?: string; og_title?: string; og_description?: string;
   og_image_path?: string; public_token?: string; pdf_path?: string;
   view_count: number; status: string;

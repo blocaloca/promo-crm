@@ -1,5 +1,6 @@
 import type { LayoutProps } from "./types";
 import { getPromoStyle } from "./style";
+import CtaLink from "./CtaLink";
 
 // headline, multi-image grid, body/CTA below — restyle freely, this is a placeholder pass
 export default function Gallery({ promo, imageUrls }: LayoutProps) {
@@ -29,11 +30,7 @@ export default function Gallery({ promo, imageUrls }: LayoutProps) {
           {promo.body_copy}
         </p>
       )}
-      {promo.link_url && (
-        <a href={promo.link_url} className="inline-block underline">
-          {promo.link_url}
-        </a>
-      )}
+      <CtaLink promo={promo} />
     </div>
   );
 }

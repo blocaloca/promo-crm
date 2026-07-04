@@ -29,6 +29,7 @@ export interface PromoLike {
   headline?: string | null;
   body_copy?: string | null;
   link_url?: string | null;
+  cta_text?: string | null;
   aspect_ratio?: string | null;
   font_family?: string | null;
   font_size?: string | null;
