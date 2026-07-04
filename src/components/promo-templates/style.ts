@@ -44,6 +44,7 @@ export const JUSTIFY_X_OPTIONS = [
 ];
 const DEFAULT_JUSTIFY_X = "left";
 const TEXT_ALIGN_CLASS: Record<string, string> = { left: "text-left", center: "text-center", right: "text-right" };
+const ROW_JUSTIFY_CLASS: Record<string, string> = { left: "justify-start", center: "justify-center", right: "justify-end" };
 
 export const JUSTIFY_Y_OPTIONS = [
   { value: "top", label: "Top" },
@@ -93,6 +94,7 @@ export function getPromoStyle(promo: PromoStyleFields) {
     headlineClass: HEADLINE_SIZE_CLASS[fontSize],
     bodyClass: BODY_SIZE_CLASS[fontSize],
     textAlignClass: TEXT_ALIGN_CLASS[justifyX],
+    rowJustifyClass: ROW_JUSTIFY_CLASS[justifyX],
     imageHeightClass: IMAGE_HEIGHT_CLASS[imageSize],
     objectPosition: `${justifyX} ${justifyY}`,
     paddingClass: PADDING_CLASS[padding],
