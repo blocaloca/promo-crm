@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase-server";
-import { PromoRenderer, AspectFrame } from "@/components/promo-templates";
+import { PromoRenderer, AspectFrame, PrintButton } from "@/components/promo-templates";
 import type { Metadata } from "next";
 
 const BUCKET = "promo-assets";
@@ -49,10 +49,13 @@ export default async function PromoPage({ params }: { params: { token: string } 
 
   return (
     <main className="min-h-screen bg-white text-neutral-900">
-      <div className="max-w-3xl mx-auto px-6 py-12">
+      <div className="max-w-3xl mx-auto px-6 py-12 print:p-0 print:max-w-none">
         <AspectFrame promo={promo}>
           <PromoRenderer promo={promo} imageUrls={urls} />
         </AspectFrame>
+        <div className="print:hidden">
+          <PrintButton />
+        </div>
       </div>
     </main>
   );

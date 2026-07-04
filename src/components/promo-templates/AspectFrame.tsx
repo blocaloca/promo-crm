@@ -13,7 +13,7 @@ export default function AspectFrame({
   const { aspectCss, paddingClass, flexJustifyClass } = getPromoStyle(promo);
   return (
     <div
-      className="w-full mx-auto overflow-y-auto rounded-lg border border-edge bg-white text-neutral-900"
+      className="w-full mx-auto overflow-y-auto rounded-lg border border-edge bg-white text-neutral-900 print:overflow-visible print:border-none print:rounded-none"
       style={{ aspectRatio: aspectCss }}
     >
       <div className={`h-full flex flex-col ${flexJustifyClass} ${paddingClass}`}>{children}</div>
