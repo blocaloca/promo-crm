@@ -15,6 +15,8 @@ export interface Promo {
   sector?: string[]; angle?: string; og_title?: string; og_description?: string;
   og_image_path?: string; public_token?: string; pdf_path?: string;
   view_count: number; status: string;
+  font_family?: string; font_size?: string; image_size?: string;
+  justify_x?: string; justify_y?: string; padding?: string; line_height?: string;
 }
 export interface Message {
   id: string; label: string; body: string; msg_type: MsgType;

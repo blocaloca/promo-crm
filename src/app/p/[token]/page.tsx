@@ -50,7 +50,7 @@ export default async function PromoPage({ params }: { params: { token: string } 
   return (
     <main className="min-h-screen bg-white text-neutral-900">
       <div className="max-w-3xl mx-auto px-6 py-12">
-        <AspectFrame aspectRatio={promo.aspect_ratio}>
+        <AspectFrame promo={promo}>
           <PromoRenderer promo={promo} imageUrls={urls} />
         </AspectFrame>
       </div>

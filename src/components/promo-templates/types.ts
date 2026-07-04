@@ -29,6 +29,14 @@ export interface PromoLike {
   headline?: string | null;
   body_copy?: string | null;
   link_url?: string | null;
+  aspect_ratio?: string | null;
+  font_family?: string | null;
+  font_size?: string | null;
+  image_size?: string | null;
+  justify_x?: string | null;
+  justify_y?: string | null;
+  padding?: string | null;
+  line_height?: string | null;
 }
 
 export interface LayoutProps {

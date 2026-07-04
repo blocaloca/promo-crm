@@ -2,12 +2,15 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase-browser";
 import { getOrgId } from "@/lib/org";
-import { PromoRenderer, AspectFrame, PROMO_TEMPLATES, getTemplate, DEFAULT_TEMPLATE_KEY } from "@/components/promo-templates";
+import {
+  PromoRenderer, AspectFrame, PROMO_TEMPLATES, getTemplate, DEFAULT_TEMPLATE_KEY,
+  ASPECT_PRESETS, FONT_OPTIONS, FONT_SIZE_OPTIONS, IMAGE_SIZE_OPTIONS, JUSTIFY_X_OPTIONS, JUSTIFY_Y_OPTIONS, PADDING_OPTIONS, LINE_HEIGHT_OPTIONS,
+} from "@/components/promo-templates";
 import type { Promo, Asset } from "@/lib/types";
 
 const BUCKET = "promo-assets";
-const ASPECTS = ["1.91:1", "1:1", "4:5", "9:16", "letter"];
 const token = () => Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 6);
+const DEFAULT_STYLE = { font_family: "hanken", font_size: "md", image_size: "half", justify_x: "left", justify_y: "top", padding: "md", line_height: "normal" };
 
 export default function Promos() {
   const supabase = createClient();
@@ -15,8 +18,9 @@ export default function Promos() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
   const [editing, setEditing] = useState<Promo | null>(null);
+  const [saveError, setSaveError] = useState("");
   const [picked, setPicked] = useState<string[]>([]);
-  const [draft, setDraft] = useState<Partial<Promo>>({ template_key: DEFAULT_TEMPLATE_KEY, aspect_ratio: "1.91:1", status: "draft" });
+  const [draft, setDraft] = useState<Partial<Promo>>({ template_key: DEFAULT_TEMPLATE_KEY, aspect_ratio: "1.91:1", status: "draft", ...DEFAULT_STYLE });
 
   const load = useCallback(async () => {
     const org = await getOrgId(); if (!org) return;
@@ -32,7 +36,7 @@ export default function Promos() {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  function startNew() { setEditing({} as Promo); setDraft({ template_key: DEFAULT_TEMPLATE_KEY, aspect_ratio: "1.91:1", status: "draft" }); setPicked([]); }
+  function startNew() { setEditing({} as Promo); setDraft({ template_key: DEFAULT_TEMPLATE_KEY, aspect_ratio: "1.91:1", status: "draft", ...DEFAULT_STYLE }); setPicked([]); }
   async function edit(p: Promo) {
     setEditing(p); setDraft(p);
     const { data } = await supabase.from("promo_assets").select("asset_id, slot").eq("promo_id", p.id).order("slot");
@@ -41,12 +45,19 @@ export default function Promos() {
 
   async function save(publish = false) {
     const org = await getOrgId(); if (!org || !draft.name) return;
+    setSaveError("");
     const { data: { user } } = await supabase.auth.getUser();
     const payload: any = { ...draft, org_id: org, owner_id: user!.id, status: publish ? "published" : draft.status };
     if (publish && !payload.public_token) payload.public_token = token();
     let promoId = (editing as Promo)?.id;
-    if (promoId) { await supabase.from("promos").update(payload).eq("id", promoId); }
-    else { const { data } = await supabase.from("promos").insert(payload).select("id").single(); promoId = data!.id; }
+    if (promoId) {
+      const { error } = await supabase.from("promos").update(payload).eq("id", promoId);
+      if (error) { setSaveError(error.message); return; }
+    } else {
+      const { data, error } = await supabase.from("promos").insert(payload).select("id").single();
+      if (error || !data) { setSaveError(error?.message ?? "Save failed"); return; }
+      promoId = data.id;
+    }
     // rewrite slots
     await supabase.from("promo_assets").delete().eq("promo_id", promoId);
     if (picked.length) await supabase.from("promo_assets").insert(picked.map((asset_id, slot) => ({ promo_id: promoId, asset_id, slot })));
@@ -69,6 +80,11 @@ export default function Promos() {
     });
   }
 
+  const aspectMatch = (draft.aspect_ratio ?? "").match(/^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/);
+  const aspectW = aspectMatch ? aspectMatch[1] : "1.91";
+  const aspectH = aspectMatch ? aspectMatch[2] : "1";
+  function setCustomAspect(w: string, h: string) { setDraft({ ...draft, aspect_ratio: `${w}:${h}` }); }
+
   if (editing) {
     const previewUrls = picked.map((id) => thumbs[id]).filter(Boolean) as string[];
     const atMax = picked.length >= template.maxImages;
@@ -86,14 +102,68 @@ export default function Promos() {
           </div>
           <div className="flex gap-2 flex-wrap mt-2">
             <input className="input flex-1" placeholder="promo name*" value={draft.name ?? ""} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
-            <select className="input w-auto" value={draft.aspect_ratio} onChange={(e) => setDraft({ ...draft, aspect_ratio: e.target.value })}>
-              {ASPECTS.map((a) => <option key={a} value={a}>{a}</option>)}
-            </select>
             <input className="input w-40" placeholder="angle" value={draft.angle ?? ""} onChange={(e) => setDraft({ ...draft, angle: e.target.value })} />
           </div>
+
+          <div className="mono text-xs text-muted mt-2">aspect ratio</div>
+          <div className="flex gap-2 flex-wrap items-center">
+            {ASPECT_PRESETS.map((a) => (
+              <button key={a} onClick={() => setDraft({ ...draft, aspect_ratio: a })}
+                className={`btn text-sm ${draft.aspect_ratio === a ? "btn-primary" : "btn-ghost"}`}>
+                {a}
+              </button>
+            ))}
+            <span className="mono text-xs text-muted">custom</span>
+            <input type="number" step="0.01" min="0.1" className="input w-16" value={aspectW} onChange={(e) => setCustomAspect(e.target.value, aspectH)} />
+            <span className="mono text-xs text-muted">:</span>
+            <input type="number" step="0.01" min="0.1" className="input w-16" value={aspectH} onChange={(e) => setCustomAspect(aspectW, e.target.value)} />
+          </div>
+
           <input className="input" placeholder="headline" value={draft.headline ?? ""} onChange={(e) => setDraft({ ...draft, headline: e.target.value })} />
           <textarea className="input" placeholder="body copy" value={draft.body_copy ?? ""} onChange={(e) => setDraft({ ...draft, body_copy: e.target.value })} />
           <input className="input" placeholder="CTA link url" value={draft.link_url ?? ""} onChange={(e) => setDraft({ ...draft, link_url: e.target.value })} />
+
+          <div className="mono text-xs text-muted mt-2">style</div>
+          <div className="flex gap-2 flex-wrap">
+            <select className="input w-auto" value={draft.font_family ?? "hanken"} onChange={(e) => setDraft({ ...draft, font_family: e.target.value })}>
+              {FONT_OPTIONS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+            </select>
+            <select className="input w-auto" value={draft.font_size ?? "md"} onChange={(e) => setDraft({ ...draft, font_size: e.target.value })}>
+              {FONT_SIZE_OPTIONS.map((f) => <option key={f.value} value={f.value}>{f.label} text</option>)}
+            </select>
+            <select className="input w-auto" value={draft.padding ?? "md"} onChange={(e) => setDraft({ ...draft, padding: e.target.value })}>
+              {PADDING_OPTIONS.map((p) => <option key={p.value} value={p.value}>{p.label} padding</option>)}
+            </select>
+            <select className="input w-auto" value={draft.line_height ?? "normal"} onChange={(e) => setDraft({ ...draft, line_height: e.target.value })}>
+              {LINE_HEIGHT_OPTIONS.map((l) => <option key={l.value} value={l.value}>{l.label} lines</option>)}
+            </select>
+            {template.key === "hero" && (
+              <select className="input w-auto" value={draft.image_size ?? "half"} onChange={(e) => setDraft({ ...draft, image_size: e.target.value })}>
+                {IMAGE_SIZE_OPTIONS.map((i) => <option key={i.value} value={i.value}>{i.label} image</option>)}
+              </select>
+            )}
+          </div>
+          <div className="flex gap-4 flex-wrap items-center">
+            <div className="flex gap-1 items-center">
+              <span className="mono text-xs text-muted mr-1">justify x</span>
+              {JUSTIFY_X_OPTIONS.map((j) => (
+                <button key={j.value} onClick={() => setDraft({ ...draft, justify_x: j.value })}
+                  className={`btn text-sm ${(draft.justify_x ?? "left") === j.value ? "btn-primary" : "btn-ghost"}`}>
+                  {j.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-1 items-center">
+              <span className="mono text-xs text-muted mr-1">justify y</span>
+              {JUSTIFY_Y_OPTIONS.map((j) => (
+                <button key={j.value} onClick={() => setDraft({ ...draft, justify_y: j.value })}
+                  className={`btn text-sm ${(draft.justify_y ?? "top") === j.value ? "btn-primary" : "btn-ghost"}`}>
+                  {j.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="mono text-xs text-muted mt-2">link preview (what LinkedIn shows)</div>
           <input className="input" placeholder="og title" value={draft.og_title ?? ""} onChange={(e) => setDraft({ ...draft, og_title: e.target.value })} />
           <input className="input" placeholder="og description" value={draft.og_description ?? ""} onChange={(e) => setDraft({ ...draft, og_description: e.target.value })} />
@@ -114,6 +184,7 @@ export default function Promos() {
               );
             })}
           </div>
+          {saveError && <p className="text-cold text-sm">{saveError}</p>}
           <div className="flex gap-2 mt-2">
             <button className="btn btn-ghost" onClick={() => save(false)}>Save draft</button>
             <button className="btn btn-primary" onClick={() => save(true)}>Save & publish</button>
@@ -123,7 +194,7 @@ export default function Promos() {
 
         <div className="grid gap-2 lg:sticky lg:top-4">
           <div className="mono text-xs text-muted">preview — {draft.aspect_ratio}</div>
-          <AspectFrame aspectRatio={draft.aspect_ratio}>
+          <AspectFrame promo={draft}>
             <PromoRenderer promo={draft} imageUrls={previewUrls} />
           </AspectFrame>
         </div>
