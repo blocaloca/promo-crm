@@ -1,6 +1,6 @@
 import type { LayoutProps } from "./types";
 import { getPromoStyle } from "./style";
-import CtaLink from "./CtaLink";
+import ContactLinks from "./ContactLinks";
 
 // single hero image, headline/body/CTA stacked below — restyle freely, this is a placeholder pass
 export default function Hero({ promo, imageUrls }: LayoutProps) {
@@ -26,7 +26,7 @@ export default function Hero({ promo, imageUrls }: LayoutProps) {
             {promo.body_copy}
           </p>
         )}
-        <CtaLink promo={promo} />
+        <ContactLinks promo={promo} />
       </div>
     </div>
   );

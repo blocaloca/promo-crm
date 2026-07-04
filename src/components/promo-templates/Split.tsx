@@ -1,6 +1,6 @@
 import type { LayoutProps } from "./types";
 import { getPromoStyle } from "./style";
-import CtaLink from "./CtaLink";
+import ContactLinks from "./ContactLinks";
 
 // image on one side, copy on the other — restyle freely, this is a placeholder pass
 export default function Split({ promo, imageUrls }: LayoutProps) {
@@ -26,7 +26,7 @@ export default function Split({ promo, imageUrls }: LayoutProps) {
             {promo.body_copy}
           </p>
         )}
-        <CtaLink promo={promo} />
+        <ContactLinks promo={promo} />
       </div>
     </div>
   );

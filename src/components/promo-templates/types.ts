@@ -28,8 +28,9 @@ export interface PromoLike {
   template_key?: string | null;
   headline?: string | null;
   body_copy?: string | null;
-  link_url?: string | null;
-  cta_text?: string | null;
+  link_url_1?: string | null;
+  link_url_2?: string | null;
+  contact_phone?: string | null;
   aspect_ratio?: string | null;
   font_family?: string | null;
   font_size?: string | null;
