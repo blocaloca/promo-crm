@@ -1,5 +1,4 @@
 import type { PromoLike } from "./types";
-import { DEFAULT_CONTACT_ALIGN, CONTACT_ALIGN_OPTIONS } from "./types";
 
 // one phone number + up to two links, shown exactly as typed — the href gets
 // a scheme prepended behind the scenes so a bare "davidcasteel.com" actually
@@ -12,11 +11,21 @@ function normalizePhoneHref(v: string) {
 }
 
 const JUSTIFY_CLASS: Record<string, string> = { left: "justify-start", center: "justify-center", right: "justify-end" };
+const ITEMS_CLASS: Record<string, string> = { left: "items-start", center: "items-center", right: "items-end" };
 
-type ContactFields = Pick<PromoLike, "contact_phone" | "link_url_1" | "link_url_2" | "contact_align">;
+type ContactFields = Pick<PromoLike, "contact_phone" | "link_url_1" | "link_url_2">;
 
-export default function ContactLinks({ promo }: { promo: ContactFields }) {
-  const align = CONTACT_ALIGN_OPTIONS.some((o) => o.value === promo.contact_align) ? promo.contact_align! : DEFAULT_CONTACT_ALIGN;
+// alignment/stacking is decided by the template that renders this, not by a
+// per-promo control — each template hardcodes what its mockup shows
+export default function ContactLinks({
+  promo,
+  align = "left",
+  stack = false,
+}: {
+  promo: ContactFields;
+  align?: "left" | "center" | "right";
+  stack?: boolean;
+}) {
   const items = [
     promo.contact_phone && { href: normalizePhoneHref(promo.contact_phone), label: promo.contact_phone, external: false },
     promo.link_url_1 && { href: normalizeUrl(promo.link_url_1), label: promo.link_url_1, external: true },
@@ -25,13 +34,15 @@ export default function ContactLinks({ promo }: { promo: ContactFields }) {
 
   if (!items.length) return null;
 
+  const layoutClass = stack ? `flex-col ${ITEMS_CLASS[align]}` : `flex-wrap ${JUSTIFY_CLASS[align]}`;
+
   return (
-    <div className={`flex flex-wrap gap-4 ${JUSTIFY_CLASS[align]}`}>
+    <div className={`flex gap-2 ${layoutClass}`} style={{ fontFamily: "'Montserrat', sans-serif" }}>
       {items.map((it, i) => (
         <a
           key={i}
           href={it.href}
-          className="inline-block underline"
+          className="inline-block underline text-sm"
           target={it.external ? "_blank" : undefined}
           rel={it.external ? "noopener noreferrer" : undefined}
         >

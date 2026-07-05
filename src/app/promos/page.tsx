@@ -1,20 +1,80 @@
 "use client";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase-browser";
 import { getOrgId } from "@/lib/org";
 import {
   PromoRenderer, AspectFrame, getTemplate, DEFAULT_TEMPLATE_KEY,
-  ASPECT_PRESETS, FONT_OPTIONS, FONT_SIZE_OPTIONS, PADDING_OPTIONS, LINE_HEIGHT_OPTIONS,
-  TEXT_PLACEMENT_OPTIONS, IMAGE_ANCHOR_OPTIONS, BRAND_ALIGN_OPTIONS, BRAND_GAP_OPTIONS, CONTACT_ALIGN_OPTIONS,
+  PROMO_TEMPLATES, ASPECT_PRESETS,
 } from "@/components/promo-templates";
+import type { PromoTemplateKey } from "@/components/promo-templates";
 import type { Promo, Asset } from "@/lib/types";
 
 const BUCKET = "promo-assets";
 const token = () => Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 6);
-const DEFAULT_STYLE = {
-  font_family: "hanken", font_size: "md", padding: "md", line_height: "normal",
-  text_placement: "bottom", image_anchor: "center center", brand_align: "left", brand_gap: "md", contact_align: "left",
-};
+
+// grey-box mini previews of each fixed layout — no real photos, just shape
+function TemplateThumb({ templateKey }: { templateKey: PromoTemplateKey }) {
+  const img = <div className="bg-edge flex-1 min-h-0 min-w-0" />;
+  const brand = <div className="bg-muted/40 h-1.5 w-8 rounded-full" />;
+  const contact = (stack: boolean) => (
+    <div className={`flex ${stack ? "flex-col items-end" : ""} gap-1`}>
+      <div className="bg-muted/40 h-1 w-6 rounded-full" />
+      <div className="bg-muted/40 h-1 w-6 rounded-full" />
+    </div>
+  );
+  switch (templateKey) {
+    case "cover_centered":
+      return (
+        <div className="h-16 w-full flex flex-col gap-1 p-1.5 border border-edge rounded">
+          <div className="bg-edge flex-[7] min-h-0" />
+          <div className="flex-[3] min-h-0 flex flex-col items-center justify-center gap-1">
+            {brand}
+            <div className="flex gap-1">{contact(false)}</div>
+          </div>
+        </div>
+      );
+    case "split_centered":
+      return (
+        <div className="h-16 w-full flex gap-1 p-1.5 border border-edge rounded">
+          <div className="bg-edge flex-1 min-w-0" />
+          <div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1">
+            {brand}
+            <div className="flex gap-1">{contact(false)}</div>
+          </div>
+        </div>
+      );
+    case "cover_footer_bar":
+      return (
+        <div className="h-16 w-full flex flex-col gap-1 p-1.5 border border-edge rounded">
+          <div className="bg-edge flex-[9] min-h-0" />
+          <div className="flex-1 min-h-0 flex items-end justify-between">
+            {brand}
+            {contact(true)}
+          </div>
+        </div>
+      );
+    case "split_footer_bar":
+      return (
+        <div className="h-16 w-full flex gap-1 p-1.5 border border-edge rounded">
+          <div className="flex-1 min-w-0 flex flex-col gap-1">
+            <div className="bg-edge flex-[9] min-h-0" />
+            <div className="flex-1 min-h-0 flex items-end">{brand}</div>
+          </div>
+          <div className="flex-1 min-w-0 flex flex-col justify-end items-end">{contact(true)}</div>
+        </div>
+      );
+    case "fullbleed_footer_bar":
+      return (
+        <div className="h-16 w-full flex flex-col gap-1 p-1.5 border border-edge rounded">
+          <div className="bg-edge flex-[15] min-h-0" />
+          <div className="flex-1 min-h-0 flex items-end justify-between">
+            {brand}
+            {contact(true)}
+          </div>
+        </div>
+      );
+  }
+}
 
 export default function Promos() {
   const supabase = createClient();
@@ -24,7 +84,7 @@ export default function Promos() {
   const [editing, setEditing] = useState<Promo | null>(null);
   const [saveError, setSaveError] = useState("");
   const [picked, setPicked] = useState<string[]>([]);
-  const [draft, setDraft] = useState<Partial<Promo>>({ template_key: DEFAULT_TEMPLATE_KEY, aspect_ratio: "1.91:1", status: "draft", ...DEFAULT_STYLE });
+  const [draft, setDraft] = useState<Partial<Promo>>({ template_key: DEFAULT_TEMPLATE_KEY, aspect_ratio: getTemplate(DEFAULT_TEMPLATE_KEY).defaultAspectRatio, status: "draft" });
 
   const load = useCallback(async () => {
     const org = await getOrgId(); if (!org) return;
@@ -40,7 +100,11 @@ export default function Promos() {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  function startNew() { setEditing({} as Promo); setDraft({ template_key: DEFAULT_TEMPLATE_KEY, aspect_ratio: "1.91:1", status: "draft", ...DEFAULT_STYLE }); setPicked([]); }
+  function startNew() {
+    setEditing({} as Promo);
+    setDraft({ template_key: DEFAULT_TEMPLATE_KEY, aspect_ratio: getTemplate(DEFAULT_TEMPLATE_KEY).defaultAspectRatio, status: "draft" });
+    setPicked([]);
+  }
   async function edit(p: Promo) {
     setEditing(p); setDraft(p);
     const { data } = await supabase.from("promo_assets").select("asset_id, slot").eq("promo_id", p.id).order("slot");
@@ -50,6 +114,10 @@ export default function Promos() {
     if (!window.confirm(`Delete "${p.name}"? This can't be undone.`)) return;
     await supabase.from("promos").delete().eq("id", p.id);
     load();
+  }
+
+  function pickTemplate(key: PromoTemplateKey) {
+    setDraft({ ...draft, template_key: key, aspect_ratio: getTemplate(key).defaultAspectRatio });
   }
 
   async function save(publish = false) {
@@ -100,6 +168,21 @@ export default function Promos() {
             <input className="input w-40" placeholder="angle" value={draft.angle ?? ""} onChange={(e) => setDraft({ ...draft, angle: e.target.value })} />
           </div>
 
+          <div className="mono text-xs text-muted mt-2">template</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {PROMO_TEMPLATES.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => pickTemplate(t.key)}
+                className={`text-left ${draft.template_key === t.key ? "ring-2 ring-white rounded" : ""}`}
+                title={t.description}
+              >
+                <TemplateThumb templateKey={t.key} />
+                <div className="text-xs mt-1">{t.label}</div>
+              </button>
+            ))}
+          </div>
+
           <div className="mono text-xs text-muted mt-2">aspect ratio</div>
           <div className="flex gap-2 flex-wrap items-center">
             {ASPECT_PRESETS.map((a) => (
@@ -114,8 +197,8 @@ export default function Promos() {
             <input type="number" step="0.01" min="0.1" className="input w-16" value={aspectH} onChange={(e) => setCustomAspect(aspectW, e.target.value)} />
           </div>
 
-          <div className="mono text-xs text-muted mt-2">brand mark — logo wins if set, otherwise the title text below</div>
-          <input className="input" placeholder="brand title (e.g. David Casteel, Luxury Photography Production)" value={draft.brand_title ?? ""} onChange={(e) => setDraft({ ...draft, brand_title: e.target.value })} />
+          <div className="mono text-xs text-muted mt-2">brand mark — logo and title show together</div>
+          <input className="input" placeholder="title (e.g. by David Casteel)" value={draft.brand_title ?? ""} onChange={(e) => setDraft({ ...draft, brand_title: e.target.value })} />
           <div className="grid grid-cols-5 sm:grid-cols-8 gap-2">
             {assets.map((a) => (
               <button key={a.id} onClick={() => setDraft({ ...draft, logo_asset_id: draft.logo_asset_id === a.id ? undefined : a.id })}
@@ -124,71 +207,15 @@ export default function Promos() {
               </button>
             ))}
           </div>
-          <div className="flex gap-2 flex-wrap items-center">
-            <span className="mono text-xs text-muted mr-1">brand mark align</span>
-            {BRAND_ALIGN_OPTIONS.map((b) => (
-              <button key={b.value} onClick={() => setDraft({ ...draft, brand_align: b.value })}
-                className={`btn text-sm ${(draft.brand_align ?? "left") === b.value ? "btn-primary" : "btn-ghost"}`}>
-                {b.label}
-              </button>
-            ))}
-            <select className="input w-auto" value={draft.brand_gap ?? "md"} onChange={(e) => setDraft({ ...draft, brand_gap: e.target.value })}>
-              {BRAND_GAP_OPTIONS.map((g) => <option key={g.value} value={g.value}>{g.label} gap below</option>)}
-            </select>
-          </div>
 
-          <input className="input" placeholder="headline" value={draft.headline ?? ""} onChange={(e) => setDraft({ ...draft, headline: e.target.value })} />
-          <textarea className="input" placeholder="body copy" value={draft.body_copy ?? ""} onChange={(e) => setDraft({ ...draft, body_copy: e.target.value })} />
+          <input className="input mt-2" placeholder="headline (optional)" value={draft.headline ?? ""} onChange={(e) => setDraft({ ...draft, headline: e.target.value })} />
+          <textarea className="input" placeholder="body copy (optional)" value={draft.body_copy ?? ""} onChange={(e) => setDraft({ ...draft, body_copy: e.target.value })} />
+
           <div className="mono text-xs text-muted mt-2">contact — shown exactly as typed, links open externally</div>
           <div className="flex gap-2 flex-wrap">
             <input className="input" placeholder="phone" value={draft.contact_phone ?? ""} onChange={(e) => setDraft({ ...draft, contact_phone: e.target.value })} />
             <input className="input" placeholder="link 1 (e.g. yoursite.com)" value={draft.link_url_1 ?? ""} onChange={(e) => setDraft({ ...draft, link_url_1: e.target.value })} />
             <input className="input" placeholder="link 2 (e.g. instagram.com/you)" value={draft.link_url_2 ?? ""} onChange={(e) => setDraft({ ...draft, link_url_2: e.target.value })} />
-          </div>
-          <div className="flex gap-2 flex-wrap items-center">
-            <span className="mono text-xs text-muted mr-1">contact align</span>
-            {CONTACT_ALIGN_OPTIONS.map((c) => (
-              <button key={c.value} onClick={() => setDraft({ ...draft, contact_align: c.value })}
-                className={`btn text-sm ${(draft.contact_align ?? "left") === c.value ? "btn-primary" : "btn-ghost"}`}>
-                {c.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="mono text-xs text-muted mt-2">style</div>
-          <div className="flex gap-2 flex-wrap">
-            <select className="input w-auto" value={draft.font_family ?? "hanken"} onChange={(e) => setDraft({ ...draft, font_family: e.target.value })}>
-              {FONT_OPTIONS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
-            </select>
-            <select className="input w-auto" value={draft.font_size ?? "md"} onChange={(e) => setDraft({ ...draft, font_size: e.target.value })}>
-              {FONT_SIZE_OPTIONS.map((f) => <option key={f.value} value={f.value}>{f.label} text</option>)}
-            </select>
-            <select className="input w-auto" value={draft.padding ?? "md"} onChange={(e) => setDraft({ ...draft, padding: e.target.value })}>
-              {PADDING_OPTIONS.map((p) => <option key={p.value} value={p.value}>{p.label} padding</option>)}
-            </select>
-            <select className="input w-auto" value={draft.line_height ?? "normal"} onChange={(e) => setDraft({ ...draft, line_height: e.target.value })}>
-              {LINE_HEIGHT_OPTIONS.map((l) => <option key={l.value} value={l.value}>{l.label} lines</option>)}
-            </select>
-          </div>
-
-          <div className="mono text-xs text-muted mt-2">text placement</div>
-          <div className="flex gap-2 flex-wrap">
-            {TEXT_PLACEMENT_OPTIONS.map((t) => (
-              <button key={t.value} onClick={() => setDraft({ ...draft, text_placement: t.value })}
-                className={`btn text-sm ${(draft.text_placement ?? "bottom") === t.value ? "btn-primary" : "btn-ghost"}`}>
-                {t.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="mono text-xs text-muted mt-2">image anchor (within its zone, never cropped)</div>
-          <div className="grid grid-cols-3 gap-1 w-40">
-            {IMAGE_ANCHOR_OPTIONS.map((a) => (
-              <button key={a.value} onClick={() => setDraft({ ...draft, image_anchor: a.value })} title={a.label}
-                className={`btn text-xs h-9 ${(draft.image_anchor ?? "center center") === a.value ? "btn-primary" : "btn-ghost"}`}>
-                •
-              </button>
-            ))}
           </div>
 
           <div className="mono text-xs text-muted mt-2">link preview (what LinkedIn shows)</div>

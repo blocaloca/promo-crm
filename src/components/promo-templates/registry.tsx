@@ -1,9 +1,17 @@
-import AdaptiveTemplate from "./AdaptiveTemplate";
+import CoverCentered from "./CoverCentered";
+import SplitCentered from "./SplitCentered";
+import CoverFooterBar from "./CoverFooterBar";
+import SplitFooterBar from "./SplitFooterBar";
+import FullBleedFooterBar from "./FullBleedFooterBar";
 import type { LayoutProps, PromoTemplateKey } from "./types";
 import { getTemplate } from "./types";
 
 const LAYOUTS: Record<PromoTemplateKey, (props: LayoutProps) => JSX.Element> = {
-  adaptive: AdaptiveTemplate,
+  cover_centered: CoverCentered,
+  split_centered: SplitCentered,
+  cover_footer_bar: CoverFooterBar,
+  split_footer_bar: SplitFooterBar,
+  fullbleed_footer_bar: FullBleedFooterBar,
 };
 
 // single switch point — builder preview and /p/[token] both render through this,
