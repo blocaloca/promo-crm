@@ -17,7 +17,7 @@ export interface Promo {
   og_image_path?: string; public_token?: string; pdf_path?: string;
   view_count: number; status: string;
   font_family?: string; font_size?: string; padding?: string; line_height?: string;
-  text_placement?: string; image_anchor?: string; brand_title?: string; logo_asset_id?: string;
+  text_placement?: string; image_anchor?: string; brand_title?: string; brand_align?: string; logo_asset_id?: string;
 }
 export interface Message {
   id: string; label: string; body: string; msg_type: MsgType;

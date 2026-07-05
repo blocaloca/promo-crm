@@ -1,5 +1,5 @@
 import type { LayoutProps } from "./types";
-import { DEFAULT_TEXT_PLACEMENT, DEFAULT_IMAGE_ANCHOR, TEXT_PLACEMENT_OPTIONS, IMAGE_ANCHOR_OPTIONS } from "./types";
+import { DEFAULT_TEXT_PLACEMENT, DEFAULT_IMAGE_ANCHOR, DEFAULT_BRAND_ALIGN, TEXT_PLACEMENT_OPTIONS, IMAGE_ANCHOR_OPTIONS, BRAND_ALIGN_OPTIONS } from "./types";
 import { getPromoStyle } from "./style";
 import ContactLinks from "./ContactLinks";
 
@@ -11,12 +11,16 @@ const CONTAINER_FLEX: Record<string, string> = {
   left: "flex-row-reverse",
 };
 
+// horizontal position of the brand mark within the text zone
+const BRAND_ALIGN_CLASS: Record<string, string> = { left: "self-start", center: "self-center", right: "self-end" };
+
 // restyle freely — this is the plumbing pass: no-crop image, 3x3 anchor,
 // text-placement switch, logo-wins-else-title brand mark, render-only-what's-set
 export default function AdaptiveTemplate({ promo, imageUrls, logoUrl }: LayoutProps) {
   const s = getPromoStyle(promo);
   const placement = TEXT_PLACEMENT_OPTIONS.some((o) => o.value === promo.text_placement) ? promo.text_placement! : DEFAULT_TEXT_PLACEMENT;
   const anchor = IMAGE_ANCHOR_OPTIONS.some((o) => o.value === promo.image_anchor) ? promo.image_anchor! : DEFAULT_IMAGE_ANCHOR;
+  const brandAlign = BRAND_ALIGN_OPTIONS.some((o) => o.value === promo.brand_align) ? promo.brand_align! : DEFAULT_BRAND_ALIGN;
   const isRow = placement === "left" || placement === "right";
   const image = imageUrls[0];
 
@@ -31,9 +35,9 @@ export default function AdaptiveTemplate({ promo, imageUrls, logoUrl }: LayoutPr
         className={`flex flex-col gap-3 min-h-0 min-w-0 ${image ? (isRow ? "flex-1" : "flex-[2]") : "flex-1"} ${isRow ? "justify-center" : ""}`}
       >
         {logoUrl ? (
-          <img src={logoUrl} alt="" className="h-10 w-auto object-contain" />
+          <img src={logoUrl} alt="" className={`h-10 w-auto object-contain ${BRAND_ALIGN_CLASS[brandAlign]}`} />
         ) : promo.brand_title ? (
-          <div className="text-sm font-semibold tracking-wide uppercase" style={{ fontFamily: s.fontFamily }}>
+          <div className={`text-sm font-semibold tracking-wide uppercase ${BRAND_ALIGN_CLASS[brandAlign]}`} style={{ fontFamily: s.fontFamily }}>
             {promo.brand_title}
           </div>
         ) : null}

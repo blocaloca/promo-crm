@@ -45,6 +45,14 @@ export const IMAGE_ANCHOR_OPTIONS = [
 ];
 export const DEFAULT_IMAGE_ANCHOR = "center center";
 
+// left/center/right position of the brand mark (logo or title text) within the text zone
+export const BRAND_ALIGN_OPTIONS = [
+  { value: "left", label: "Left" },
+  { value: "center", label: "Center" },
+  { value: "right", label: "Right" },
+];
+export const DEFAULT_BRAND_ALIGN = "left";
+
 // fields every layout needs — a subset shared by the full Promo row and the builder's draft
 export interface PromoLike {
   name?: string | null;
@@ -62,6 +70,7 @@ export interface PromoLike {
   text_placement?: string | null;
   image_anchor?: string | null;
   brand_title?: string | null;
+  brand_align?: string | null;
   logo_asset_id?: string | null;
 }
 

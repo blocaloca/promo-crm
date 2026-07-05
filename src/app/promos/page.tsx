@@ -5,7 +5,7 @@ import { getOrgId } from "@/lib/org";
 import {
   PromoRenderer, AspectFrame, getTemplate, DEFAULT_TEMPLATE_KEY,
   ASPECT_PRESETS, FONT_OPTIONS, FONT_SIZE_OPTIONS, PADDING_OPTIONS, LINE_HEIGHT_OPTIONS,
-  TEXT_PLACEMENT_OPTIONS, IMAGE_ANCHOR_OPTIONS,
+  TEXT_PLACEMENT_OPTIONS, IMAGE_ANCHOR_OPTIONS, BRAND_ALIGN_OPTIONS,
 } from "@/components/promo-templates";
 import type { Promo, Asset } from "@/lib/types";
 
@@ -13,7 +13,7 @@ const BUCKET = "promo-assets";
 const token = () => Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 6);
 const DEFAULT_STYLE = {
   font_family: "hanken", font_size: "md", padding: "md", line_height: "normal",
-  text_placement: "bottom", image_anchor: "center center", brand_mode: "title",
+  text_placement: "bottom", image_anchor: "center center", brand_align: "left",
 };
 
 export default function Promos() {
@@ -116,6 +116,15 @@ export default function Promos() {
               <button key={a.id} onClick={() => setDraft({ ...draft, logo_asset_id: draft.logo_asset_id === a.id ? undefined : a.id })}
                 className={`panel overflow-hidden relative ${draft.logo_asset_id === a.id ? "ring-2 ring-white" : ""}`}>
                 {thumbs[a.id] && <img src={thumbs[a.id]} className="w-full h-14 object-cover" />}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2 flex-wrap items-center">
+            <span className="mono text-xs text-muted mr-1">brand mark align</span>
+            {BRAND_ALIGN_OPTIONS.map((b) => (
+              <button key={b.value} onClick={() => setDraft({ ...draft, brand_align: b.value })}
+                className={`btn text-sm ${(draft.brand_align ?? "left") === b.value ? "btn-primary" : "btn-ghost"}`}>
+                {b.label}
               </button>
             ))}
           </div>
