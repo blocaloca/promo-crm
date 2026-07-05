@@ -1,4 +1,4 @@
-export type PromoTemplateKey = "hero" | "split" | "gallery";
+export type PromoTemplateKey = "adaptive";
 
 export interface PromoTemplateEntry {
   key: PromoTemplateKey;
@@ -7,14 +7,13 @@ export interface PromoTemplateEntry {
   maxImages: number;
 }
 
-// image capacity per layout — drives the builder's asset picker limits
+// one adaptive template for now — structure left in place for a future second one
+// (e.g. a multi-image gallery) without reshaping the registry/switch mechanism
 export const PROMO_TEMPLATES: PromoTemplateEntry[] = [
-  { key: "hero", label: "Hero", minImages: 1, maxImages: 1 },
-  { key: "split", label: "Split", minImages: 1, maxImages: 1 },
-  { key: "gallery", label: "Gallery", minImages: 2, maxImages: 6 },
+  { key: "adaptive", label: "Adaptive", minImages: 0, maxImages: 1 },
 ];
 
-export const DEFAULT_TEMPLATE_KEY: PromoTemplateKey = "hero";
+export const DEFAULT_TEMPLATE_KEY: PromoTemplateKey = "adaptive";
 
 export function getTemplate(key?: string | null): PromoTemplateEntry {
   return (
@@ -23,8 +22,32 @@ export function getTemplate(key?: string | null): PromoTemplateEntry {
   );
 }
 
+export const TEXT_PLACEMENT_OPTIONS = [
+  { value: "bottom", label: "Image top, text below" },
+  { value: "right", label: "Image left, text right" },
+  { value: "left", label: "Image right, text left" },
+  { value: "top", label: "Text above, image below" },
+];
+export const DEFAULT_TEXT_PLACEMENT = "bottom";
+
+// 3x3 anchor grid — where the (never-cropped) image sits within its zone.
+// values double as valid CSS object-position keywords.
+export const IMAGE_ANCHOR_OPTIONS = [
+  { value: "left top", label: "Top left" },
+  { value: "center top", label: "Top center" },
+  { value: "right top", label: "Top right" },
+  { value: "left center", label: "Middle left" },
+  { value: "center center", label: "Center" },
+  { value: "right center", label: "Middle right" },
+  { value: "left bottom", label: "Bottom left" },
+  { value: "center bottom", label: "Bottom center" },
+  { value: "right bottom", label: "Bottom right" },
+];
+export const DEFAULT_IMAGE_ANCHOR = "center center";
+
 // fields every layout needs — a subset shared by the full Promo row and the builder's draft
 export interface PromoLike {
+  name?: string | null;
   template_key?: string | null;
   headline?: string | null;
   body_copy?: string | null;
@@ -34,14 +57,16 @@ export interface PromoLike {
   aspect_ratio?: string | null;
   font_family?: string | null;
   font_size?: string | null;
-  image_size?: string | null;
-  justify_x?: string | null;
-  justify_y?: string | null;
   padding?: string | null;
   line_height?: string | null;
+  text_placement?: string | null;
+  image_anchor?: string | null;
+  brand_title?: string | null;
+  logo_asset_id?: string | null;
 }
 
 export interface LayoutProps {
   promo: PromoLike;
   imageUrls: string[];
+  logoUrl?: string | null;
 }

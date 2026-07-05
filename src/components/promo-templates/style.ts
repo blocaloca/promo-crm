@@ -1,12 +1,10 @@
-// per-promo styling controls: font, size, image sizing, justify, padding, aspect ratio.
-// every layout + AspectFrame reads through getPromoStyle() so they stay consistent.
+// per-promo card styling: font, size, line height, padding, aspect ratio.
+// text position and image position are handled separately in AdaptiveTemplate
+// (image_anchor / text_placement), since those are structural, not typographic.
 
 export interface PromoStyleFields {
   font_family?: string | null;
   font_size?: string | null;
-  image_size?: string | null;
-  justify_x?: string | null;
-  justify_y?: string | null;
   padding?: string | null;
   line_height?: string | null;
   aspect_ratio?: string | null;
@@ -26,33 +24,6 @@ export const FONT_SIZE_OPTIONS = [
 const DEFAULT_FONT_SIZE = "md";
 const HEADLINE_SIZE_CLASS: Record<string, string> = { sm: "text-xl", md: "text-3xl", lg: "text-5xl" };
 const BODY_SIZE_CLASS: Record<string, string> = { sm: "text-sm", md: "text-lg", lg: "text-xl" };
-
-export const IMAGE_SIZE_OPTIONS = [
-  { value: "compact", label: "Compact" },
-  { value: "half", label: "Half" },
-  { value: "full", label: "Full" },
-];
-const DEFAULT_IMAGE_SIZE = "half";
-// fractions of the frame's own height (not fixed rem) — a fixed height would exceed
-// short frames like a 1.91:1 landscape card and push the text out of view
-const IMAGE_HEIGHT_CLASS: Record<string, string> = { compact: "h-1/4", half: "h-1/2", full: "h-3/4" };
-
-export const JUSTIFY_X_OPTIONS = [
-  { value: "left", label: "Left" },
-  { value: "center", label: "Center" },
-  { value: "right", label: "Right" },
-];
-const DEFAULT_JUSTIFY_X = "left";
-const TEXT_ALIGN_CLASS: Record<string, string> = { left: "text-left", center: "text-center", right: "text-right" };
-const ROW_JUSTIFY_CLASS: Record<string, string> = { left: "justify-start", center: "justify-center", right: "justify-end" };
-
-export const JUSTIFY_Y_OPTIONS = [
-  { value: "top", label: "Top" },
-  { value: "center", label: "Center" },
-  { value: "bottom", label: "Bottom" },
-];
-const DEFAULT_JUSTIFY_Y = "top";
-const FLEX_JUSTIFY_CLASS: Record<string, string> = { top: "justify-start", center: "justify-center", bottom: "justify-end" };
 
 export const PADDING_OPTIONS = [
   { value: "sm", label: "Small" },
@@ -83,9 +54,6 @@ export function aspectRatioToCss(value?: string | null): string {
 export function getPromoStyle(promo: PromoStyleFields) {
   const font = FONT_OPTIONS.find((f) => f.value === promo.font_family) ?? FONT_OPTIONS.find((f) => f.value === DEFAULT_FONT)!;
   const fontSize = promo.font_size && BODY_SIZE_CLASS[promo.font_size] ? promo.font_size : DEFAULT_FONT_SIZE;
-  const imageSize = promo.image_size && IMAGE_HEIGHT_CLASS[promo.image_size] ? promo.image_size : DEFAULT_IMAGE_SIZE;
-  const justifyX = promo.justify_x && TEXT_ALIGN_CLASS[promo.justify_x] ? promo.justify_x : DEFAULT_JUSTIFY_X;
-  const justifyY = promo.justify_y && FLEX_JUSTIFY_CLASS[promo.justify_y] ? promo.justify_y : DEFAULT_JUSTIFY_Y;
   const padding = promo.padding && PADDING_CLASS[promo.padding] ? promo.padding : DEFAULT_PADDING;
   const lineHeight = promo.line_height && LINE_HEIGHT_CLASS[promo.line_height] ? promo.line_height : DEFAULT_LINE_HEIGHT;
 
@@ -93,12 +61,7 @@ export function getPromoStyle(promo: PromoStyleFields) {
     fontFamily: font.css,
     headlineClass: HEADLINE_SIZE_CLASS[fontSize],
     bodyClass: BODY_SIZE_CLASS[fontSize],
-    textAlignClass: TEXT_ALIGN_CLASS[justifyX],
-    rowJustifyClass: ROW_JUSTIFY_CLASS[justifyX],
-    imageHeightClass: IMAGE_HEIGHT_CLASS[imageSize],
-    objectPosition: `${justifyX} ${justifyY}`,
     paddingClass: PADDING_CLASS[padding],
-    flexJustifyClass: FLEX_JUSTIFY_CLASS[justifyY],
     lineHeightClass: LINE_HEIGHT_CLASS[lineHeight],
     aspectCss: aspectRatioToCss(promo.aspect_ratio),
   };

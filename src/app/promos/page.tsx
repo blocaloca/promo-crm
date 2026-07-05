@@ -3,14 +3,18 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase-browser";
 import { getOrgId } from "@/lib/org";
 import {
-  PromoRenderer, AspectFrame, PROMO_TEMPLATES, getTemplate, DEFAULT_TEMPLATE_KEY,
-  ASPECT_PRESETS, FONT_OPTIONS, FONT_SIZE_OPTIONS, IMAGE_SIZE_OPTIONS, JUSTIFY_X_OPTIONS, JUSTIFY_Y_OPTIONS, PADDING_OPTIONS, LINE_HEIGHT_OPTIONS,
+  PromoRenderer, AspectFrame, getTemplate, DEFAULT_TEMPLATE_KEY,
+  ASPECT_PRESETS, FONT_OPTIONS, FONT_SIZE_OPTIONS, PADDING_OPTIONS, LINE_HEIGHT_OPTIONS,
+  TEXT_PLACEMENT_OPTIONS, IMAGE_ANCHOR_OPTIONS,
 } from "@/components/promo-templates";
 import type { Promo, Asset } from "@/lib/types";
 
 const BUCKET = "promo-assets";
 const token = () => Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 6);
-const DEFAULT_STYLE = { font_family: "hanken", font_size: "md", image_size: "half", justify_x: "left", justify_y: "top", padding: "md", line_height: "normal" };
+const DEFAULT_STYLE = {
+  font_family: "hanken", font_size: "md", padding: "md", line_height: "normal",
+  text_placement: "bottom", image_anchor: "center center", brand_mode: "title",
+};
 
 export default function Promos() {
   const supabase = createClient();
@@ -66,12 +70,6 @@ export default function Promos() {
 
   const template = getTemplate(draft.template_key);
 
-  function setTemplateKey(key: string) {
-    const next = getTemplate(key);
-    setDraft({ ...draft, template_key: key });
-    setPicked((p) => p.slice(0, next.maxImages));
-  }
-
   function togglePick(id: string) {
     setPicked((p) => {
       if (p.includes(id)) return p.filter((x) => x !== id);
@@ -88,19 +86,11 @@ export default function Promos() {
   if (editing) {
     const previewUrls = picked.map((id) => thumbs[id]).filter(Boolean) as string[];
     const atMax = picked.length >= template.maxImages;
+    const logoUrl = draft.logo_asset_id ? thumbs[draft.logo_asset_id] : undefined;
     return (
       <div className="my-3 grid gap-4 lg:grid-cols-2 items-start">
         <div className="panel p-4 grid gap-2">
-          <div className="mono text-xs text-muted">template</div>
           <div className="flex gap-2 flex-wrap">
-            {PROMO_TEMPLATES.map((t) => (
-              <button key={t.key} onClick={() => setTemplateKey(t.key)}
-                className={`btn ${draft.template_key === t.key ? "btn-primary" : "btn-ghost"}`}>
-                {t.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2 flex-wrap mt-2">
             <input className="input flex-1" placeholder="promo name*" value={draft.name ?? ""} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
             <input className="input w-40" placeholder="angle" value={draft.angle ?? ""} onChange={(e) => setDraft({ ...draft, angle: e.target.value })} />
           </div>
@@ -117,6 +107,17 @@ export default function Promos() {
             <input type="number" step="0.01" min="0.1" className="input w-16" value={aspectW} onChange={(e) => setCustomAspect(e.target.value, aspectH)} />
             <span className="mono text-xs text-muted">:</span>
             <input type="number" step="0.01" min="0.1" className="input w-16" value={aspectH} onChange={(e) => setCustomAspect(aspectW, e.target.value)} />
+          </div>
+
+          <div className="mono text-xs text-muted mt-2">brand mark — logo wins if set, otherwise the title text below</div>
+          <input className="input" placeholder="brand title (e.g. David Casteel, Luxury Photography Production)" value={draft.brand_title ?? ""} onChange={(e) => setDraft({ ...draft, brand_title: e.target.value })} />
+          <div className="grid grid-cols-5 sm:grid-cols-8 gap-2">
+            {assets.map((a) => (
+              <button key={a.id} onClick={() => setDraft({ ...draft, logo_asset_id: draft.logo_asset_id === a.id ? undefined : a.id })}
+                className={`panel overflow-hidden relative ${draft.logo_asset_id === a.id ? "ring-2 ring-white" : ""}`}>
+                {thumbs[a.id] && <img src={thumbs[a.id]} className="w-full h-14 object-cover" />}
+              </button>
+            ))}
           </div>
 
           <input className="input" placeholder="headline" value={draft.headline ?? ""} onChange={(e) => setDraft({ ...draft, headline: e.target.value })} />
@@ -142,31 +143,26 @@ export default function Promos() {
             <select className="input w-auto" value={draft.line_height ?? "normal"} onChange={(e) => setDraft({ ...draft, line_height: e.target.value })}>
               {LINE_HEIGHT_OPTIONS.map((l) => <option key={l.value} value={l.value}>{l.label} lines</option>)}
             </select>
-            {template.key === "hero" && (
-              <select className="input w-auto" value={draft.image_size ?? "half"} onChange={(e) => setDraft({ ...draft, image_size: e.target.value })}>
-                {IMAGE_SIZE_OPTIONS.map((i) => <option key={i.value} value={i.value}>{i.label} image</option>)}
-              </select>
-            )}
           </div>
-          <div className="flex gap-4 flex-wrap items-center">
-            <div className="flex gap-1 items-center">
-              <span className="mono text-xs text-muted mr-1">justify x</span>
-              {JUSTIFY_X_OPTIONS.map((j) => (
-                <button key={j.value} onClick={() => setDraft({ ...draft, justify_x: j.value })}
-                  className={`btn text-sm ${(draft.justify_x ?? "left") === j.value ? "btn-primary" : "btn-ghost"}`}>
-                  {j.label}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-1 items-center">
-              <span className="mono text-xs text-muted mr-1">justify y</span>
-              {JUSTIFY_Y_OPTIONS.map((j) => (
-                <button key={j.value} onClick={() => setDraft({ ...draft, justify_y: j.value })}
-                  className={`btn text-sm ${(draft.justify_y ?? "top") === j.value ? "btn-primary" : "btn-ghost"}`}>
-                  {j.label}
-                </button>
-              ))}
-            </div>
+
+          <div className="mono text-xs text-muted mt-2">text placement</div>
+          <div className="flex gap-2 flex-wrap">
+            {TEXT_PLACEMENT_OPTIONS.map((t) => (
+              <button key={t.value} onClick={() => setDraft({ ...draft, text_placement: t.value })}
+                className={`btn text-sm ${(draft.text_placement ?? "bottom") === t.value ? "btn-primary" : "btn-ghost"}`}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="mono text-xs text-muted mt-2">image anchor (within its zone, never cropped)</div>
+          <div className="grid grid-cols-3 gap-1 w-40">
+            {IMAGE_ANCHOR_OPTIONS.map((a) => (
+              <button key={a.value} onClick={() => setDraft({ ...draft, image_anchor: a.value })} title={a.label}
+                className={`btn text-xs h-9 ${(draft.image_anchor ?? "center center") === a.value ? "btn-primary" : "btn-ghost"}`}>
+                •
+              </button>
+            ))}
           </div>
 
           <div className="mono text-xs text-muted mt-2">link preview (what LinkedIn shows)</div>
@@ -174,7 +170,7 @@ export default function Promos() {
           <input className="input" placeholder="og description" value={draft.og_description ?? ""} onChange={(e) => setDraft({ ...draft, og_description: e.target.value })} />
 
           <div className="mono text-xs text-muted mt-2">
-            images ({picked.length}/{template.maxImages} selected — {template.label} wants {template.minImages === template.maxImages ? template.maxImages : `${template.minImages}–${template.maxImages}`}, first = preview image)
+            main image ({picked.length}/{template.maxImages} selected)
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
             {assets.map((a) => {
@@ -200,7 +196,7 @@ export default function Promos() {
         <div className="grid gap-2 lg:sticky lg:top-4">
           <div className="mono text-xs text-muted">preview — {draft.aspect_ratio}</div>
           <AspectFrame promo={draft}>
-            <PromoRenderer promo={draft} imageUrls={previewUrls} />
+            <PromoRenderer promo={draft} imageUrls={previewUrls} logoUrl={logoUrl} />
           </AspectFrame>
         </div>
       </div>

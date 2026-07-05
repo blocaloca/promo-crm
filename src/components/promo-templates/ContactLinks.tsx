@@ -1,5 +1,4 @@
 import type { PromoLike } from "./types";
-import { getPromoStyle } from "./style";
 
 // one phone number + up to two links, shown exactly as typed — the href gets
 // a scheme prepended behind the scenes so a bare "davidcasteel.com" actually
@@ -11,8 +10,9 @@ function normalizePhoneHref(v: string) {
   return `tel:${v.replace(/[^\d+]/g, "")}`;
 }
 
-export default function ContactLinks({ promo }: { promo: PromoLike }) {
-  const { rowJustifyClass } = getPromoStyle(promo);
+type ContactFields = Pick<PromoLike, "contact_phone" | "link_url_1" | "link_url_2">;
+
+export default function ContactLinks({ promo }: { promo: ContactFields }) {
   const items = [
     promo.contact_phone && { href: normalizePhoneHref(promo.contact_phone), label: promo.contact_phone, external: false },
     promo.link_url_1 && { href: normalizeUrl(promo.link_url_1), label: promo.link_url_1, external: true },
@@ -22,7 +22,7 @@ export default function ContactLinks({ promo }: { promo: PromoLike }) {
   if (!items.length) return null;
 
   return (
-    <div className={`flex flex-wrap gap-4 ${rowJustifyClass}`}>
+    <div className="flex flex-wrap gap-4">
       {items.map((it, i) => (
         <a
           key={i}

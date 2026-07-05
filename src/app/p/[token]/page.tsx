@@ -18,7 +18,12 @@ async function getPromo(token: string) {
       if (a) { const { data: s } = await supabase.storage.from(BUCKET).createSignedUrl(a.storage_path, 3600); if (s) urls.push(s.signedUrl); }
     }
   }
-  return { promo, urls };
+  let logoUrl: string | null = null;
+  if (promo.logo_asset_id) {
+    const { data: logoAsset } = await supabase.from("assets").select("storage_path").eq("id", promo.logo_asset_id).single();
+    if (logoAsset) { const { data: s } = await supabase.storage.from(BUCKET).createSignedUrl(logoAsset.storage_path, 3600); logoUrl = s?.signedUrl ?? null; }
+  }
+  return { promo, urls, logoUrl };
 }
 
 export async function generateMetadata({ params }: { params: { token: string } }): Promise<Metadata> {
@@ -41,7 +46,7 @@ export async function generateMetadata({ params }: { params: { token: string } }
 export default async function PromoPage({ params }: { params: { token: string } }) {
   const r = await getPromo(params.token);
   if (!r) return <main className="min-h-screen grid place-items-center text-muted">Not found.</main>;
-  const { promo, urls } = r;
+  const { promo, urls, logoUrl } = r;
 
   // fire-and-forget view count
   const supabase = createClient();
@@ -51,7 +56,7 @@ export default async function PromoPage({ params }: { params: { token: string } 
     <main className="min-h-screen bg-white text-neutral-900">
       <div className="max-w-3xl mx-auto px-6 py-12 print:p-0 print:max-w-none">
         <AspectFrame promo={promo}>
-          <PromoRenderer promo={promo} imageUrls={urls} />
+          <PromoRenderer promo={promo} imageUrls={urls} logoUrl={logoUrl} />
         </AspectFrame>
         <div className="print:hidden">
           <PrintButton />
