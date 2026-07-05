@@ -121,7 +121,8 @@ export default function Promos() {
   }
 
   async function save(publish = false) {
-    const org = await getOrgId(); if (!org || !draft.name) return;
+    if (!draft.name) { setSaveError("Promo name is required."); return; }
+    const org = await getOrgId(); if (!org) { setSaveError("Couldn't determine your organization — try refreshing."); return; }
     setSaveError("");
     const { data: { user } } = await supabase.auth.getUser();
     const payload: any = { ...draft, org_id: org, owner_id: user!.id, status: publish ? "published" : draft.status };
