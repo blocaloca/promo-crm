@@ -53,6 +53,23 @@ export const BRAND_ALIGN_OPTIONS = [
 ];
 export const DEFAULT_BRAND_ALIGN = "left";
 
+// left/center/right position of the contact row (phone + links) — independent of brand_align
+export const CONTACT_ALIGN_OPTIONS = [
+  { value: "left", label: "Left" },
+  { value: "center", label: "Center" },
+  { value: "right", label: "Right" },
+];
+export const DEFAULT_CONTACT_ALIGN = "left";
+
+// space between the brand mark (logo/title) and whatever follows it in the text zone
+export const BRAND_GAP_OPTIONS = [
+  { value: "sm", label: "Small" },
+  { value: "md", label: "Medium" },
+  { value: "lg", label: "Large" },
+  { value: "xl", label: "Extra large" },
+];
+export const DEFAULT_BRAND_GAP = "md";
+
 // fields every layout needs — a subset shared by the full Promo row and the builder's draft
 export interface PromoLike {
   name?: string | null;
@@ -62,6 +79,7 @@ export interface PromoLike {
   link_url_1?: string | null;
   link_url_2?: string | null;
   contact_phone?: string | null;
+  contact_align?: string | null;
   aspect_ratio?: string | null;
   font_family?: string | null;
   font_size?: string | null;
@@ -71,6 +89,7 @@ export interface PromoLike {
   image_anchor?: string | null;
   brand_title?: string | null;
   brand_align?: string | null;
+  brand_gap?: string | null;
   logo_asset_id?: string | null;
 }
 

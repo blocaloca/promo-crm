@@ -1,4 +1,5 @@
 import type { PromoLike } from "./types";
+import { DEFAULT_CONTACT_ALIGN, CONTACT_ALIGN_OPTIONS } from "./types";
 
 // one phone number + up to two links, shown exactly as typed — the href gets
 // a scheme prepended behind the scenes so a bare "davidcasteel.com" actually
@@ -10,9 +11,12 @@ function normalizePhoneHref(v: string) {
   return `tel:${v.replace(/[^\d+]/g, "")}`;
 }
 
-type ContactFields = Pick<PromoLike, "contact_phone" | "link_url_1" | "link_url_2">;
+const JUSTIFY_CLASS: Record<string, string> = { left: "justify-start", center: "justify-center", right: "justify-end" };
+
+type ContactFields = Pick<PromoLike, "contact_phone" | "link_url_1" | "link_url_2" | "contact_align">;
 
 export default function ContactLinks({ promo }: { promo: ContactFields }) {
+  const align = CONTACT_ALIGN_OPTIONS.some((o) => o.value === promo.contact_align) ? promo.contact_align! : DEFAULT_CONTACT_ALIGN;
   const items = [
     promo.contact_phone && { href: normalizePhoneHref(promo.contact_phone), label: promo.contact_phone, external: false },
     promo.link_url_1 && { href: normalizeUrl(promo.link_url_1), label: promo.link_url_1, external: true },
@@ -22,7 +26,7 @@ export default function ContactLinks({ promo }: { promo: ContactFields }) {
   if (!items.length) return null;
 
   return (
-    <div className="flex flex-wrap gap-4">
+    <div className={`flex flex-wrap gap-4 ${JUSTIFY_CLASS[align]}`}>
       {items.map((it, i) => (
         <a
           key={i}

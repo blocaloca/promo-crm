@@ -5,7 +5,7 @@ import { getOrgId } from "@/lib/org";
 import {
   PromoRenderer, AspectFrame, getTemplate, DEFAULT_TEMPLATE_KEY,
   ASPECT_PRESETS, FONT_OPTIONS, FONT_SIZE_OPTIONS, PADDING_OPTIONS, LINE_HEIGHT_OPTIONS,
-  TEXT_PLACEMENT_OPTIONS, IMAGE_ANCHOR_OPTIONS, BRAND_ALIGN_OPTIONS,
+  TEXT_PLACEMENT_OPTIONS, IMAGE_ANCHOR_OPTIONS, BRAND_ALIGN_OPTIONS, BRAND_GAP_OPTIONS, CONTACT_ALIGN_OPTIONS,
 } from "@/components/promo-templates";
 import type { Promo, Asset } from "@/lib/types";
 
@@ -13,7 +13,7 @@ const BUCKET = "promo-assets";
 const token = () => Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 6);
 const DEFAULT_STYLE = {
   font_family: "hanken", font_size: "md", padding: "md", line_height: "normal",
-  text_placement: "bottom", image_anchor: "center center", brand_align: "left",
+  text_placement: "bottom", image_anchor: "center center", brand_align: "left", brand_gap: "md", contact_align: "left",
 };
 
 export default function Promos() {
@@ -132,6 +132,9 @@ export default function Promos() {
                 {b.label}
               </button>
             ))}
+            <select className="input w-auto" value={draft.brand_gap ?? "md"} onChange={(e) => setDraft({ ...draft, brand_gap: e.target.value })}>
+              {BRAND_GAP_OPTIONS.map((g) => <option key={g.value} value={g.value}>{g.label} gap below</option>)}
+            </select>
           </div>
 
           <input className="input" placeholder="headline" value={draft.headline ?? ""} onChange={(e) => setDraft({ ...draft, headline: e.target.value })} />
@@ -141,6 +144,15 @@ export default function Promos() {
             <input className="input" placeholder="phone" value={draft.contact_phone ?? ""} onChange={(e) => setDraft({ ...draft, contact_phone: e.target.value })} />
             <input className="input" placeholder="link 1 (e.g. yoursite.com)" value={draft.link_url_1 ?? ""} onChange={(e) => setDraft({ ...draft, link_url_1: e.target.value })} />
             <input className="input" placeholder="link 2 (e.g. instagram.com/you)" value={draft.link_url_2 ?? ""} onChange={(e) => setDraft({ ...draft, link_url_2: e.target.value })} />
+          </div>
+          <div className="flex gap-2 flex-wrap items-center">
+            <span className="mono text-xs text-muted mr-1">contact align</span>
+            {CONTACT_ALIGN_OPTIONS.map((c) => (
+              <button key={c.value} onClick={() => setDraft({ ...draft, contact_align: c.value })}
+                className={`btn text-sm ${(draft.contact_align ?? "left") === c.value ? "btn-primary" : "btn-ghost"}`}>
+                {c.label}
+              </button>
+            ))}
           </div>
 
           <div className="mono text-xs text-muted mt-2">style</div>
