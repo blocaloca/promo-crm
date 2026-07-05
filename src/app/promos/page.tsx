@@ -46,6 +46,11 @@ export default function Promos() {
     const { data } = await supabase.from("promo_assets").select("asset_id, slot").eq("promo_id", p.id).order("slot");
     setPicked((data ?? []).map((r) => r.asset_id));
   }
+  async function del(p: Promo) {
+    if (!window.confirm(`Delete "${p.name}"? This can't be undone.`)) return;
+    await supabase.from("promos").delete().eq("id", p.id);
+    load();
+  }
 
   async function save(publish = false) {
     const org = await getOrgId(); if (!org || !draft.name) return;
@@ -232,6 +237,7 @@ export default function Promos() {
                   <span className="mono text-xs text-muted">{p.view_count} views</span>
                 </>
               )}
+              <button className="btn btn-ghost text-sm ml-auto" onClick={() => del(p)}>Delete</button>
             </div>
           </div>
         ))}

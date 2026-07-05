@@ -26,7 +26,10 @@ export default function Messages() {
     else await supabase.from("messages").insert({ ...draft, org_id: org, owner_id: user!.id });
     setDraft({ msg_type: "intro" }); setEditing(null); load();
   }
-  async function del(id: string) { await supabase.from("messages").delete().eq("id", id); load(); }
+  async function del(id: string, label: string) {
+    if (!window.confirm(`Delete "${label}"? This can't be undone.`)) return;
+    await supabase.from("messages").delete().eq("id", id); load();
+  }
 
   return (
     <div>
@@ -57,7 +60,7 @@ export default function Messages() {
                     <span className="font-semibold">{m.label}</span>
                     {m.sector && <span className="chip text-muted">{m.sector}</span>}
                     <button className="btn btn-ghost text-xs ml-auto" onClick={() => { setDraft(m); setEditing(m.id); }}>Edit</button>
-                    <button className="btn btn-ghost text-xs" onClick={() => del(m.id)}>Delete</button>
+                    <button className="btn btn-ghost text-xs" onClick={() => del(m.id, m.label)}>Delete</button>
                   </div>
                   <div className="text-sm text-muted whitespace-pre-wrap mt-1">{m.body}</div>
                 </div>
