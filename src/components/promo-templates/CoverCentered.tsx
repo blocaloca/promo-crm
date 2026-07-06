@@ -8,11 +8,11 @@ export default function CoverCentered({ promo, imageUrls, logoUrl }: LayoutProps
   return (
     <div className="h-full w-full flex flex-col" style={{ fontFamily: "'Montserrat', sans-serif" }}>
       {image && (
-        <div className="flex-[7] min-h-0 w-full">
+        <div className="flex-[65] min-h-0 w-full">
           <img src={image} alt="" className="w-full h-full object-contain" />
         </div>
       )}
-      <div className="flex-[3] min-h-0 flex flex-col items-center justify-center gap-10 text-center px-4">
+      <div className="flex-[35] min-h-0 flex flex-col items-center justify-center gap-10 text-center px-4">
         <BrandMark logoUrl={logoUrl} brandTitle={promo.brand_title} />
         {(promo.headline || promo.body_copy) && (
           <div>

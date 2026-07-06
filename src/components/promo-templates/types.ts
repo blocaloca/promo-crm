@@ -23,7 +23,7 @@ export const PROMO_TEMPLATES: PromoTemplateEntry[] = [
     description: "Image on top, brand + contact centered below",
     minImages: 1,
     maxImages: 1,
-    defaultAspectRatio: "4:5",
+    defaultAspectRatio: "1:1",
   },
   {
     key: "split_centered",
@@ -31,7 +31,7 @@ export const PROMO_TEMPLATES: PromoTemplateEntry[] = [
     description: "Image on the left, brand + contact centered on the right",
     minImages: 1,
     maxImages: 1,
-    defaultAspectRatio: "4:3",
+    defaultAspectRatio: "1:1",
   },
   {
     key: "cover_footer_bar",
@@ -39,7 +39,7 @@ export const PROMO_TEMPLATES: PromoTemplateEntry[] = [
     description: "Image on top, thin footer bar: brand left, contact right",
     minImages: 1,
     maxImages: 1,
-    defaultAspectRatio: "4:3",
+    defaultAspectRatio: "5:4",
   },
   {
     key: "split_footer_bar",

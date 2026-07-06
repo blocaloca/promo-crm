@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase-browser";
 import { getOrgId } from "@/lib/org";
 import {
   PromoRenderer, AspectFrame, getTemplate, DEFAULT_TEMPLATE_KEY,
-  PROMO_TEMPLATES, ASPECT_PRESETS,
+  PROMO_TEMPLATES,
 } from "@/components/promo-templates";
 import type { PromoTemplateKey } from "@/components/promo-templates";
 import type { Promo, Asset } from "@/lib/types";
@@ -26,8 +26,8 @@ function TemplateThumb({ templateKey }: { templateKey: PromoTemplateKey }) {
     case "cover_centered":
       return (
         <div className="h-16 w-full flex flex-col gap-1 p-1.5 border border-edge rounded">
-          <div className="bg-edge flex-[7] min-h-0" />
-          <div className="flex-[3] min-h-0 flex flex-col items-center justify-center gap-1">
+          <div className="bg-edge flex-[65] min-h-0" />
+          <div className="flex-[35] min-h-0 flex flex-col items-center justify-center gap-1">
             {brand}
             <div className="flex gap-1">{contact(false)}</div>
           </div>
@@ -36,18 +36,18 @@ function TemplateThumb({ templateKey }: { templateKey: PromoTemplateKey }) {
     case "split_centered":
       return (
         <div className="h-16 w-full flex gap-1 p-1.5 border border-edge rounded">
-          <div className="bg-edge flex-1 min-w-0" />
-          <div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1">
+          <div className="bg-edge flex-[64] min-w-0" />
+          <div className="flex-[36] min-w-0 flex flex-col items-end justify-center gap-1">
             {brand}
-            <div className="flex gap-1">{contact(false)}</div>
+            {contact(true)}
           </div>
         </div>
       );
     case "cover_footer_bar":
       return (
         <div className="h-16 w-full flex flex-col gap-1 p-1.5 border border-edge rounded">
-          <div className="bg-edge flex-[9] min-h-0" />
-          <div className="flex-1 min-h-0 flex items-end justify-between">
+          <div className="bg-edge flex-[82] min-h-0" />
+          <div className="flex-[18] min-h-0 flex items-start justify-between">
             {brand}
             {contact(true)}
           </div>
@@ -56,18 +56,18 @@ function TemplateThumb({ templateKey }: { templateKey: PromoTemplateKey }) {
     case "split_footer_bar":
       return (
         <div className="h-16 w-full flex gap-1 p-1.5 border border-edge rounded">
-          <div className="flex-1 min-w-0 flex flex-col gap-1">
-            <div className="bg-edge flex-[9] min-h-0" />
-            <div className="flex-1 min-h-0 flex items-end">{brand}</div>
+          <div className="bg-edge flex-[52] min-w-0" />
+          <div className="flex-[48] min-w-0 flex flex-col items-end justify-center gap-1">
+            {brand}
+            {contact(true)}
           </div>
-          <div className="flex-1 min-w-0 flex flex-col justify-end items-end">{contact(true)}</div>
         </div>
       );
     case "fullbleed_footer_bar":
       return (
         <div className="h-16 w-full flex flex-col gap-1 p-1.5 border border-edge rounded">
-          <div className="bg-edge flex-[15] min-h-0" />
-          <div className="flex-1 min-h-0 flex items-end justify-between">
+          <div className="bg-edge flex-[87] min-h-0" />
+          <div className="flex-[13] min-h-0 flex items-start justify-between">
             {brand}
             {contact(true)}
           </div>
@@ -152,11 +152,6 @@ export default function Promos() {
     });
   }
 
-  const aspectMatch = (draft.aspect_ratio ?? "").match(/^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/);
-  const aspectW = aspectMatch ? aspectMatch[1] : "1.91";
-  const aspectH = aspectMatch ? aspectMatch[2] : "1";
-  function setCustomAspect(w: string, h: string) { setDraft({ ...draft, aspect_ratio: `${w}:${h}` }); }
-
   if (editing) {
     const previewUrls = picked.map((id) => thumbs[id]).filter(Boolean) as string[];
     const atMax = picked.length >= template.maxImages;
@@ -182,20 +177,6 @@ export default function Promos() {
                 <div className="text-xs mt-1">{t.label}</div>
               </button>
             ))}
-          </div>
-
-          <div className="mono text-xs text-muted mt-2">aspect ratio</div>
-          <div className="flex gap-2 flex-wrap items-center">
-            {ASPECT_PRESETS.map((a) => (
-              <button key={a} onClick={() => setDraft({ ...draft, aspect_ratio: a })}
-                className={`btn text-sm ${draft.aspect_ratio === a ? "btn-primary" : "btn-ghost"}`}>
-                {a}
-              </button>
-            ))}
-            <span className="mono text-xs text-muted">custom</span>
-            <input type="number" step="0.01" min="0.1" className="input w-16" value={aspectW} onChange={(e) => setCustomAspect(e.target.value, aspectH)} />
-            <span className="mono text-xs text-muted">:</span>
-            <input type="number" step="0.01" min="0.1" className="input w-16" value={aspectH} onChange={(e) => setCustomAspect(aspectW, e.target.value)} />
           </div>
 
           <div className="mono text-xs text-muted mt-2">brand mark — logo and title show together</div>
@@ -248,7 +229,7 @@ export default function Promos() {
         </div>
 
         <div className="grid gap-2 lg:sticky lg:top-4">
-          <div className="mono text-xs text-muted">preview — {draft.aspect_ratio}</div>
+          <div className="mono text-xs text-muted">preview — {template.label} ({template.defaultAspectRatio})</div>
           <AspectFrame promo={draft}>
             <PromoRenderer promo={draft} imageUrls={previewUrls} logoUrl={logoUrl} />
           </AspectFrame>
