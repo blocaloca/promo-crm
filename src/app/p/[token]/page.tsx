@@ -60,6 +60,9 @@ export default async function PromoPage({ params }: { params: { token: string } 
         </AspectFrame>
         <div className="print:hidden">
           <PrintButton />
+          <a href="/promos" className="block mt-4 text-sm text-neutral-500 underline">
+            ← Back to Promo CRM
+          </a>
         </div>
       </div>
     </main>
