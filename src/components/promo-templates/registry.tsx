@@ -3,15 +3,17 @@ import SplitCentered from "./SplitCentered";
 import CoverFooterBar from "./CoverFooterBar";
 import SplitFooterBar from "./SplitFooterBar";
 import FullBleedFooterBar from "./FullBleedFooterBar";
+import FullImage from "./FullImage";
 import type { LayoutProps, PromoTemplateKey } from "./types";
 import { getTemplate } from "./types";
 
-const LAYOUTS: Record<PromoTemplateKey, (props: LayoutProps) => JSX.Element> = {
+const LAYOUTS: Record<PromoTemplateKey, (props: LayoutProps) => JSX.Element | null> = {
   cover_centered: CoverCentered,
   split_centered: SplitCentered,
   cover_footer_bar: CoverFooterBar,
   split_footer_bar: SplitFooterBar,
   fullbleed_footer_bar: FullBleedFooterBar,
+  full_image: FullImage,
 };
 
 // single switch point — builder preview and /p/[token] both render through this,

@@ -73,6 +73,12 @@ function TemplateThumb({ templateKey }: { templateKey: PromoTemplateKey }) {
           </div>
         </div>
       );
+    case "full_image":
+      return (
+        <div className="h-16 w-full p-1.5 border border-edge rounded">
+          <div className="bg-edge h-full w-full" />
+        </div>
+      );
   }
 }
 
@@ -84,7 +90,7 @@ export default function Promos() {
   const [editing, setEditing] = useState<Promo | null>(null);
   const [saveError, setSaveError] = useState("");
   const [picked, setPicked] = useState<string[]>([]);
-  const [draft, setDraft] = useState<Partial<Promo>>({ template_key: DEFAULT_TEMPLATE_KEY, aspect_ratio: getTemplate(DEFAULT_TEMPLATE_KEY).defaultAspectRatio, status: "draft" });
+  const [draft, setDraft] = useState<Partial<Promo>>({ template_key: DEFAULT_TEMPLATE_KEY, aspect_ratio: getTemplate(DEFAULT_TEMPLATE_KEY).defaultAspectRatio ?? undefined, status: "draft" });
 
   const load = useCallback(async () => {
     const org = await getOrgId(); if (!org) return;
@@ -102,7 +108,7 @@ export default function Promos() {
 
   function startNew() {
     setEditing({} as Promo);
-    setDraft({ template_key: DEFAULT_TEMPLATE_KEY, aspect_ratio: getTemplate(DEFAULT_TEMPLATE_KEY).defaultAspectRatio, status: "draft" });
+    setDraft({ template_key: DEFAULT_TEMPLATE_KEY, aspect_ratio: getTemplate(DEFAULT_TEMPLATE_KEY).defaultAspectRatio ?? undefined, status: "draft" });
     setPicked([]);
   }
   async function edit(p: Promo) {
@@ -117,7 +123,8 @@ export default function Promos() {
   }
 
   function pickTemplate(key: PromoTemplateKey) {
-    setDraft({ ...draft, template_key: key, aspect_ratio: getTemplate(key).defaultAspectRatio });
+    const defaultAspectRatio = getTemplate(key).defaultAspectRatio;
+    setDraft({ ...draft, template_key: key, aspect_ratio: defaultAspectRatio ?? draft.aspect_ratio });
   }
 
   async function save(publish = false) {
@@ -150,6 +157,12 @@ export default function Promos() {
       if (p.length >= template.maxImages) return p;
       return [...p, id];
     });
+    if (template.key === "full_image" && !picked.includes(id)) {
+      const asset = assets.find((a) => a.id === id);
+      if (asset?.width && asset?.height) {
+        setDraft((d) => ({ ...d, aspect_ratio: `${asset.width}:${asset.height}` }));
+      }
+    }
   }
 
   if (editing) {
@@ -179,26 +192,34 @@ export default function Promos() {
             ))}
           </div>
 
-          <div className="mono text-xs text-muted mt-2">brand mark — logo and title show together</div>
-          <input className="input" placeholder="title (e.g. by David Casteel)" value={draft.brand_title ?? ""} onChange={(e) => setDraft({ ...draft, brand_title: e.target.value })} />
-          <div className="grid grid-cols-5 sm:grid-cols-8 gap-2">
-            {assets.map((a) => (
-              <button key={a.id} onClick={() => setDraft({ ...draft, logo_asset_id: draft.logo_asset_id === a.id ? undefined : a.id })}
-                className={`panel overflow-hidden relative ${draft.logo_asset_id === a.id ? "ring-2 ring-white" : ""}`}>
-                {thumbs[a.id] && <img src={thumbs[a.id]} className="w-full h-14 object-cover" />}
-              </button>
-            ))}
-          </div>
+          {template.key === "full_image" ? (
+            <p className="text-sm text-muted mt-2">
+              Full Image ignores brand, headline, and contact fields — the uploaded image is the whole promo.
+            </p>
+          ) : (
+            <>
+              <div className="mono text-xs text-muted mt-2">brand mark — logo and title show together</div>
+              <input className="input" placeholder="title (e.g. by David Casteel)" value={draft.brand_title ?? ""} onChange={(e) => setDraft({ ...draft, brand_title: e.target.value })} />
+              <div className="grid grid-cols-5 sm:grid-cols-8 gap-2">
+                {assets.map((a) => (
+                  <button key={a.id} onClick={() => setDraft({ ...draft, logo_asset_id: draft.logo_asset_id === a.id ? undefined : a.id })}
+                    className={`panel overflow-hidden relative ${draft.logo_asset_id === a.id ? "ring-2 ring-white" : ""}`}>
+                    {thumbs[a.id] && <img src={thumbs[a.id]} className="w-full h-14 object-cover" />}
+                  </button>
+                ))}
+              </div>
 
-          <input className="input mt-2" placeholder="headline (optional)" value={draft.headline ?? ""} onChange={(e) => setDraft({ ...draft, headline: e.target.value })} />
-          <textarea className="input" placeholder="body copy (optional)" value={draft.body_copy ?? ""} onChange={(e) => setDraft({ ...draft, body_copy: e.target.value })} />
+              <input className="input mt-2" placeholder="headline (optional)" value={draft.headline ?? ""} onChange={(e) => setDraft({ ...draft, headline: e.target.value })} />
+              <textarea className="input" placeholder="body copy (optional)" value={draft.body_copy ?? ""} onChange={(e) => setDraft({ ...draft, body_copy: e.target.value })} />
 
-          <div className="mono text-xs text-muted mt-2">contact — shown exactly as typed, links open externally</div>
-          <div className="flex gap-2 flex-wrap">
-            <input className="input" placeholder="phone" value={draft.contact_phone ?? ""} onChange={(e) => setDraft({ ...draft, contact_phone: e.target.value })} />
-            <input className="input" placeholder="link 1 (e.g. yoursite.com)" value={draft.link_url_1 ?? ""} onChange={(e) => setDraft({ ...draft, link_url_1: e.target.value })} />
-            <input className="input" placeholder="link 2 (e.g. instagram.com/you)" value={draft.link_url_2 ?? ""} onChange={(e) => setDraft({ ...draft, link_url_2: e.target.value })} />
-          </div>
+              <div className="mono text-xs text-muted mt-2">contact — shown exactly as typed, links open externally</div>
+              <div className="flex gap-2 flex-wrap">
+                <input className="input" placeholder="phone" value={draft.contact_phone ?? ""} onChange={(e) => setDraft({ ...draft, contact_phone: e.target.value })} />
+                <input className="input" placeholder="link 1 (e.g. yoursite.com)" value={draft.link_url_1 ?? ""} onChange={(e) => setDraft({ ...draft, link_url_1: e.target.value })} />
+                <input className="input" placeholder="link 2 (e.g. instagram.com/you)" value={draft.link_url_2 ?? ""} onChange={(e) => setDraft({ ...draft, link_url_2: e.target.value })} />
+              </div>
+            </>
+          )}
 
           <div className="mono text-xs text-muted mt-2">link preview (what LinkedIn shows)</div>
           <input className="input" placeholder="og title" value={draft.og_title ?? ""} onChange={(e) => setDraft({ ...draft, og_title: e.target.value })} />
@@ -229,7 +250,7 @@ export default function Promos() {
         </div>
 
         <div className="grid gap-2 lg:sticky lg:top-4">
-          <div className="mono text-xs text-muted">preview — {template.label} ({template.defaultAspectRatio})</div>
+          <div className="mono text-xs text-muted">preview — {template.label} ({template.defaultAspectRatio ?? draft.aspect_ratio ?? "from image"})</div>
           <AspectFrame promo={draft}>
             <PromoRenderer promo={draft} imageUrls={previewUrls} logoUrl={logoUrl} />
           </AspectFrame>

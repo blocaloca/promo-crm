@@ -3,7 +3,8 @@ export type PromoTemplateKey =
   | "split_centered"
   | "cover_footer_bar"
   | "split_footer_bar"
-  | "fullbleed_footer_bar";
+  | "fullbleed_footer_bar"
+  | "full_image";
 
 export interface PromoTemplateEntry {
   key: PromoTemplateKey;
@@ -11,7 +12,9 @@ export interface PromoTemplateEntry {
   description: string;
   minImages: number;
   maxImages: number;
-  defaultAspectRatio: string;
+  // null means there's no fixed shape — the card takes on whatever aspect
+  // ratio the uploaded image itself has (see full_image)
+  defaultAspectRatio: string | null;
 }
 
 // fixed, hand-designed templates — no positioning knobs. Each one is its own
@@ -56,6 +59,14 @@ export const PROMO_TEMPLATES: PromoTemplateEntry[] = [
     minImages: 1,
     maxImages: 1,
     defaultAspectRatio: "4:5",
+  },
+  {
+    key: "full_image",
+    label: "Full Image",
+    description: "Upload a finished design — shown exactly as uploaded, no overlay",
+    minImages: 1,
+    maxImages: 1,
+    defaultAspectRatio: null,
   },
 ];
 
