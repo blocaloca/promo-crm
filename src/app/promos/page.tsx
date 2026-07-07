@@ -116,6 +116,20 @@ export default function Promos() {
     const { data } = await supabase.from("promo_assets").select("asset_id, slot").eq("promo_id", p.id).order("slot");
     setPicked((data ?? []).map((r) => r.asset_id));
   }
+  async function duplicate(p: Promo) {
+    const { data } = await supabase.from("promo_assets").select("asset_id, slot").eq("promo_id", p.id).order("slot");
+    setPicked((data ?? []).map((r) => r.asset_id));
+    setEditing({} as Promo);
+    setDraft({
+      ...p,
+      id: undefined,
+      name: `${p.name} (copy)`,
+      status: "draft",
+      public_token: undefined,
+      pdf_path: undefined,
+      view_count: 0,
+    });
+  }
   async function del(p: Promo) {
     if (!window.confirm(`Delete "${p.name}"? This can't be undone.`)) return;
     await supabase.from("promos").delete().eq("id", p.id);
@@ -273,6 +287,7 @@ export default function Promos() {
             {p.headline && <div className="text-sm text-muted mt-1">{p.headline}</div>}
             <div className="flex gap-2 mt-2 flex-wrap items-center">
               <button className="btn btn-ghost text-sm" onClick={() => edit(p)}>Edit</button>
+              <button className="btn btn-ghost text-sm" onClick={() => duplicate(p)}>Duplicate</button>
               {p.public_token && (
                 <>
                   <a className="btn btn-ghost text-sm" href={`/p/${p.public_token}`} target="_blank">View ↗</a>
