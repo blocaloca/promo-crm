@@ -147,6 +147,9 @@ export default function Promos() {
     setSaveError("");
     const { data: { user } } = await supabase.auth.getUser();
     const payload: any = { ...draft, org_id: org, owner_id: user!.id, status: publish ? "published" : draft.status };
+    // an `undefined` field (e.g. a deselected logo) is dropped by JSON.stringify
+    // and never reaches the update — coerce to null so clearing a field actually persists
+    for (const k of Object.keys(payload)) if (payload[k] === undefined) payload[k] = null;
     if (publish && !payload.public_token) payload.public_token = token();
     let promoId = (editing as Promo)?.id;
     if (promoId) {
