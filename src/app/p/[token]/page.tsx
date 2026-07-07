@@ -54,7 +54,7 @@ export default async function PromoPage({ params }: { params: { token: string } 
 
   return (
     <main className="min-h-screen bg-white text-neutral-900">
-      <div className="max-w-3xl mx-auto px-6 py-12 print:p-0 print:max-w-none">
+      <div className="max-w-3xl mx-auto px-6 py-12 print:p-0 print:max-w-none print:h-screen print:flex print:flex-col print:justify-center print:items-center">
         <AspectFrame promo={promo}>
           <PromoRenderer promo={promo} imageUrls={urls} logoUrl={logoUrl} />
         </AspectFrame>
