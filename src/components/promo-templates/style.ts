@@ -16,11 +16,23 @@ export function aspectRatioToCss(value?: string | null): string {
   return "1 / 1";
 }
 
+// numeric W:H — used by the JPG exporter to size its output canvas
+export function aspectRatioToWH(value?: string | null): { w: number; h: number } {
+  if (value === "letter") return { w: 8.5, h: 11 };
+  const m = (value ?? "").match(/^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/);
+  if (m) return { w: parseFloat(m[1]), h: parseFloat(m[2]) };
+  return { w: 1, h: 1 };
+}
+
+export function resolveAspectRatio(promo: PromoStyleFields): string | null | undefined {
+  const template = getTemplate(promo.template_key);
+  return template.defaultAspectRatio ?? promo.aspect_ratio;
+}
+
 export function getPromoStyle(promo: PromoStyleFields) {
   const template = getTemplate(promo.template_key);
-  const ratio = template.defaultAspectRatio ?? promo.aspect_ratio;
   return {
-    aspectCss: aspectRatioToCss(ratio),
+    aspectCss: aspectRatioToCss(resolveAspectRatio(promo)),
     paddingClass: template.key === "full_image" ? "" : PADDING_CLASS,
   };
 }

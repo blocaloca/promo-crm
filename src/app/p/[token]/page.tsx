@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase-server";
-import { PromoRenderer, AspectFrame, PrintButton } from "@/components/promo-templates";
+import { PromoRenderer, AspectFrame, ExportButtons } from "@/components/promo-templates";
 import type { Metadata } from "next";
 
 const BUCKET = "promo-assets";
@@ -59,7 +59,7 @@ export default async function PromoPage({ params }: { params: { token: string } 
           <PromoRenderer promo={promo} imageUrls={urls} logoUrl={logoUrl} />
         </AspectFrame>
         <div className="print:hidden">
-          <PrintButton />
+          <ExportButtons promo={promo} imageUrl={urls[0]} />
           <a href="/promos" className="block mt-4 text-sm text-neutral-500 underline">
             ← Back to Promo CRM
           </a>
