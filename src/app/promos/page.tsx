@@ -138,7 +138,7 @@ export default function Promos() {
 
   function pickTemplate(key: PromoTemplateKey) {
     const defaultAspectRatio = getTemplate(key).defaultAspectRatio;
-    setDraft({ ...draft, template_key: key, aspect_ratio: defaultAspectRatio ?? draft.aspect_ratio });
+    setDraft((d) => ({ ...d, template_key: key, aspect_ratio: defaultAspectRatio ?? d.aspect_ratio }));
   }
 
   async function save(publish = false) {
@@ -190,8 +190,8 @@ export default function Promos() {
       <div className="my-3 grid gap-4 lg:grid-cols-2 items-start">
         <div className="panel p-4 grid gap-2">
           <div className="flex gap-2 flex-wrap">
-            <input className="input flex-1" placeholder="promo name*" value={draft.name ?? ""} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
-            <input className="input w-40" placeholder="angle" value={draft.angle ?? ""} onChange={(e) => setDraft({ ...draft, angle: e.target.value })} />
+            <input className="input flex-1" placeholder="promo name*" value={draft.name ?? ""} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} />
+            <input className="input w-40" placeholder="angle" value={draft.angle ?? ""} onChange={(e) => setDraft((d) => ({ ...d, angle: e.target.value }))} />
           </div>
 
           <div className="mono text-xs text-muted mt-2">template</div>
@@ -216,31 +216,31 @@ export default function Promos() {
           ) : (
             <>
               <div className="mono text-xs text-muted mt-2">brand mark — logo and title show together</div>
-              <input className="input" placeholder="title (e.g. by David Casteel)" value={draft.brand_title ?? ""} onChange={(e) => setDraft({ ...draft, brand_title: e.target.value })} />
+              <input className="input" placeholder="title (e.g. by David Casteel)" value={draft.brand_title ?? ""} onChange={(e) => setDraft((d) => ({ ...d, brand_title: e.target.value }))} />
               <div className="grid grid-cols-5 sm:grid-cols-8 gap-2">
                 {assets.map((a) => (
-                  <button key={a.id} onClick={() => setDraft({ ...draft, logo_asset_id: draft.logo_asset_id === a.id ? undefined : a.id })}
+                  <button key={a.id} onClick={() => setDraft((d) => ({ ...d, logo_asset_id: d.logo_asset_id === a.id ? undefined : a.id }))}
                     className={`panel overflow-hidden relative ${draft.logo_asset_id === a.id ? "ring-2 ring-white" : ""}`}>
                     {thumbs[a.id] && <img src={thumbs[a.id]} className="w-full h-14 object-cover" />}
                   </button>
                 ))}
               </div>
 
-              <input className="input mt-2" placeholder="headline (optional)" value={draft.headline ?? ""} onChange={(e) => setDraft({ ...draft, headline: e.target.value })} />
-              <textarea className="input" placeholder="body copy (optional)" value={draft.body_copy ?? ""} onChange={(e) => setDraft({ ...draft, body_copy: e.target.value })} />
+              <input className="input mt-2" placeholder="headline (optional)" value={draft.headline ?? ""} onChange={(e) => setDraft((d) => ({ ...d, headline: e.target.value }))} />
+              <textarea className="input" placeholder="body copy (optional)" value={draft.body_copy ?? ""} onChange={(e) => setDraft((d) => ({ ...d, body_copy: e.target.value }))} />
 
               <div className="mono text-xs text-muted mt-2">contact — shown exactly as typed, links open externally</div>
               <div className="flex gap-2 flex-wrap">
-                <input className="input" placeholder="phone" value={draft.contact_phone ?? ""} onChange={(e) => setDraft({ ...draft, contact_phone: e.target.value })} />
-                <input className="input" placeholder="link 1 (e.g. yoursite.com)" value={draft.link_url_1 ?? ""} onChange={(e) => setDraft({ ...draft, link_url_1: e.target.value })} />
-                <input className="input" placeholder="link 2 (e.g. instagram.com/you)" value={draft.link_url_2 ?? ""} onChange={(e) => setDraft({ ...draft, link_url_2: e.target.value })} />
+                <input className="input" placeholder="phone" value={draft.contact_phone ?? ""} onChange={(e) => setDraft((d) => ({ ...d, contact_phone: e.target.value }))} />
+                <input className="input" placeholder="link 1 (e.g. yoursite.com)" value={draft.link_url_1 ?? ""} onChange={(e) => setDraft((d) => ({ ...d, link_url_1: e.target.value }))} />
+                <input className="input" placeholder="link 2 (e.g. instagram.com/you)" value={draft.link_url_2 ?? ""} onChange={(e) => setDraft((d) => ({ ...d, link_url_2: e.target.value }))} />
               </div>
             </>
           )}
 
           <div className="mono text-xs text-muted mt-2">link preview (what LinkedIn shows)</div>
-          <input className="input" placeholder="og title" value={draft.og_title ?? ""} onChange={(e) => setDraft({ ...draft, og_title: e.target.value })} />
-          <input className="input" placeholder="og description" value={draft.og_description ?? ""} onChange={(e) => setDraft({ ...draft, og_description: e.target.value })} />
+          <input className="input" placeholder="og title" value={draft.og_title ?? ""} onChange={(e) => setDraft((d) => ({ ...d, og_title: e.target.value }))} />
+          <input className="input" placeholder="og description" value={draft.og_description ?? ""} onChange={(e) => setDraft((d) => ({ ...d, og_description: e.target.value }))} />
 
           <div className="mono text-xs text-muted mt-2">
             main image ({picked.length}/{template.maxImages} selected)
