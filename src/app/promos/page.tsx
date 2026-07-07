@@ -90,7 +90,7 @@ export default function Promos() {
   const [editing, setEditing] = useState<Promo | null>(null);
   const [saveError, setSaveError] = useState("");
   const [picked, setPicked] = useState<string[]>([]);
-  const [draft, setDraft] = useState<Partial<Promo>>({ template_key: DEFAULT_TEMPLATE_KEY, aspect_ratio: getTemplate(DEFAULT_TEMPLATE_KEY).defaultAspectRatio ?? undefined, status: "draft" });
+  const [draft, setDraft] = useState<Partial<Promo>>({ template_key: DEFAULT_TEMPLATE_KEY, aspect_ratio: getTemplate(DEFAULT_TEMPLATE_KEY).defaultAspectRatio ?? undefined });
 
   const load = useCallback(async () => {
     const org = await getOrgId(); if (!org) return;
@@ -108,7 +108,7 @@ export default function Promos() {
 
   function startNew() {
     setEditing({} as Promo);
-    setDraft({ template_key: DEFAULT_TEMPLATE_KEY, aspect_ratio: getTemplate(DEFAULT_TEMPLATE_KEY).defaultAspectRatio ?? undefined, status: "draft" });
+    setDraft({ template_key: DEFAULT_TEMPLATE_KEY, aspect_ratio: getTemplate(DEFAULT_TEMPLATE_KEY).defaultAspectRatio ?? undefined });
     setPicked([]);
   }
   async function edit(p: Promo) {
@@ -124,7 +124,6 @@ export default function Promos() {
       ...p,
       id: undefined,
       name: `${p.name} (copy)`,
-      status: "draft",
       public_token: undefined,
       pdf_path: undefined,
       view_count: 0,
@@ -141,16 +140,18 @@ export default function Promos() {
     setDraft((d) => ({ ...d, template_key: key, aspect_ratio: defaultAspectRatio ?? d.aspect_ratio }));
   }
 
-  async function save(publish = false) {
+  // every save makes the promo live — there's no separate publish step, so a
+  // promo is always shareable as soon as it has been saved once
+  async function save(closeAfter: boolean) {
     if (!draft.name) { setSaveError("Promo name is required."); return; }
     const org = await getOrgId(); if (!org) { setSaveError("Couldn't determine your organization — try refreshing."); return; }
     setSaveError("");
     const { data: { user } } = await supabase.auth.getUser();
-    const payload: any = { ...draft, org_id: org, owner_id: user!.id, status: publish ? "published" : draft.status };
+    const payload: any = { ...draft, org_id: org, owner_id: user!.id, status: "published" };
     // an `undefined` field (e.g. a deselected logo) is dropped by JSON.stringify
     // and never reaches the update — coerce to null so clearing a field actually persists
     for (const k of Object.keys(payload)) if (payload[k] === undefined) payload[k] = null;
-    if (publish && !payload.public_token) payload.public_token = token();
+    if (!payload.public_token) payload.public_token = token();
     let promoId = (editing as Promo)?.id;
     if (promoId) {
       const { error } = await supabase.from("promos").update(payload).eq("id", promoId);
@@ -163,7 +164,16 @@ export default function Promos() {
     // rewrite slots
     await supabase.from("promo_assets").delete().eq("promo_id", promoId);
     if (picked.length) await supabase.from("promo_assets").insert(picked.map((asset_id, slot) => ({ promo_id: promoId, asset_id, slot })));
-    setEditing(null); load();
+    if (closeAfter) {
+      setEditing(null);
+    } else {
+      // stay open — carry the assigned id/public_token forward so the next
+      // save updates this row instead of inserting a duplicate
+      const saved = { ...draft, ...payload, id: promoId } as Promo;
+      setEditing(saved);
+      setDraft(saved);
+    }
+    load();
   }
 
   const template = getTemplate(draft.template_key);
@@ -260,8 +270,8 @@ export default function Promos() {
           </div>
           {saveError && <p className="text-cold text-sm">{saveError}</p>}
           <div className="flex gap-2 mt-2">
-            <button className="btn btn-ghost" onClick={() => save(false)}>Save draft</button>
-            <button className="btn btn-primary" onClick={() => save(true)}>Save & publish</button>
+            <button className="btn btn-ghost" onClick={() => save(false)}>Save</button>
+            <button className="btn btn-primary" onClick={() => save(true)}>Save and close</button>
             <button className="btn btn-ghost ml-auto" onClick={() => setEditing(null)}>Cancel</button>
           </div>
         </div>
