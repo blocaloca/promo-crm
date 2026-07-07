@@ -4,10 +4,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase-browser";
 
 const links = [
-  { href: "/", label: "Prospects" },
   { href: "/promos", label: "Promos" },
-  { href: "/messages", label: "Messages" },
   { href: "/media", label: "Media" },
+  { href: "/messages", label: "Messages" },
+  { href: "/", label: "Prospects" },
   { href: "/lists", label: "Lists" },
 ];
 
