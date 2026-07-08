@@ -41,15 +41,18 @@ export default function ExportButtons({ promo, imageUrl }: { promo: PromoLike; i
       if (!node) throw new Error("Nothing to export");
       const { w, h } = aspectRatioToWH(resolveAspectRatio(promo));
       const scale = MAX_EDGE / Math.max(w, h);
-      const { toBlob } = await import("html-to-image");
-      const blob = await toBlob(node, {
+      // html-to-image's toBlob() doesn't forward quality/type to the canvas
+      // encoder and always emits PNG — toJpeg() (a data URL) encodes correctly,
+      // so use that and convert to a blob ourselves
+      const { toJpeg } = await import("html-to-image");
+      const dataUrl = await toJpeg(node, {
         quality: 0.92,
         canvasWidth: Math.round(w * scale),
         canvasHeight: Math.round(h * scale),
         backgroundColor: "#ffffff",
         pixelRatio: 1,
       });
-      if (!blob) throw new Error("Export failed");
+      const blob = await (await fetch(dataUrl)).blob();
       download(blob, filenameFor(promo));
     } catch {
       setError("Couldn't generate the JPG — try again.");
