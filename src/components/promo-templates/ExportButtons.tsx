@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import { getTemplate, type PromoLike } from "./types";
-import { resolveAspectRatio, aspectRatioToWH } from "./style";
 
 // long edge for rasterized JPG exports — matches the app's own upload cap
 // (see lib/downscale.ts), so this is the highest resolution actually available
@@ -39,20 +38,20 @@ export default function ExportButtons({ promo, imageUrl }: { promo: PromoLike; i
 
       const node = document.getElementById("promo-export-target");
       if (!node) throw new Error("Nothing to export");
-      const { w, h } = aspectRatioToWH(resolveAspectRatio(promo));
-      const scale = MAX_EDGE / Math.max(w, h);
-      // html-to-image's toBlob() doesn't forward quality/type to the canvas
-      // encoder and always emits PNG — toJpeg() (a data URL) encodes correctly,
-      // so use that and convert to a blob ourselves
-      const { toJpeg } = await import("html-to-image");
-      const dataUrl = await toJpeg(node, {
-        quality: 0.92,
-        canvasWidth: Math.round(w * scale),
-        canvasHeight: Math.round(h * scale),
+      // html-to-image rasterizes via an SVG <foreignObject>, which has
+      // long-standing reliability problems on Safari/iOS — cross-origin
+      // images especially can silently fail to embed. html2canvas paints
+      // the DOM onto a canvas directly instead, which works consistently
+      // across browsers including mobile Safari.
+      const scale = MAX_EDGE / Math.max(node.offsetWidth, node.offsetHeight);
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(node, {
+        scale,
+        useCORS: true,
         backgroundColor: "#ffffff",
-        pixelRatio: 1,
       });
-      const blob = await (await fetch(dataUrl)).blob();
+      const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
+      if (!blob) throw new Error("Export failed");
       download(blob, filenameFor(promo));
     } catch {
       setError("Couldn't generate the JPG — try again.");
