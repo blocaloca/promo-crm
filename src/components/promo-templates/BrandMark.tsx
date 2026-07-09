@@ -12,8 +12,8 @@ export default function BrandMark({
 }) {
   if (!logoUrl && !brandTitle) return null;
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
-      {logoUrl && <img src={logoUrl} alt="" className="h-10 w-auto object-contain" />}
+    <div className={`flex items-center ${className}`}>
+      {logoUrl && <img src={logoUrl} alt="" className="h-10 w-auto object-contain mr-3" />}
       {brandTitle && (
         <span className="text-sm font-medium" style={{ fontFamily: "'Montserrat', sans-serif" }}>
           {brandTitle}

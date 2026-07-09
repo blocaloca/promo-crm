@@ -35,14 +35,18 @@ export default function ContactLinks({
   if (!items.length) return null;
 
   const layoutClass = stack ? `flex-col ${ITEMS_CLASS[align]}` : `flex-wrap ${JUSTIFY_CLASS[align]}`;
+  // margins, not flex `gap` — gap support is a known weak spot for
+  // DOM-to-image rasterizers (both html-to-image and html2canvas), and it's
+  // what caused overlapping text when exporting to JPG on iOS Safari
+  const itemSpacing = stack ? "mb-2 last:mb-0" : "mr-4 mb-1 last:mr-0";
 
   return (
-    <div className={`flex gap-2 ${layoutClass}`} style={{ fontFamily: "'Montserrat', sans-serif" }}>
+    <div className={`flex ${layoutClass}`} style={{ fontFamily: "'Montserrat', sans-serif" }}>
       {items.map((it, i) => (
         <a
           key={i}
           href={it.href}
-          className="inline-block underline text-sm"
+          className={`inline-block underline text-sm ${itemSpacing}`}
           target={it.external ? "_blank" : undefined}
           rel={it.external ? "noopener noreferrer" : undefined}
         >

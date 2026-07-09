@@ -8,17 +8,17 @@ import ContactLinks from "./ContactLinks";
 export default function SplitFooterBar({ promo, imageUrls, logoUrl }: LayoutProps) {
   const image = imageUrls[0];
   return (
-    <div className="h-full w-full flex gap-6" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+    <div className="h-full w-full flex" style={{ fontFamily: "'Montserrat', sans-serif" }}>
       {image && (
-        <div className="flex-[52] min-w-0 h-full">
+        <div className="flex-[52] min-w-0 h-full mr-6">
           <img src={image} alt="" className="w-full h-full object-contain" />
         </div>
       )}
       <div className="flex-[48] min-w-0 h-full flex flex-col items-end text-right">
-        <div className="flex-1 min-h-0 w-full flex flex-col items-end justify-center gap-3">
-          <BrandMark logoUrl={logoUrl} brandTitle={promo.brand_title} />
+        <div className="flex-1 min-h-0 w-full flex flex-col items-end justify-center">
+          <BrandMark logoUrl={logoUrl} brandTitle={promo.brand_title} className="mb-3" />
           {(promo.headline || promo.body_copy) && (
-            <div>
+            <div className="mb-3">
               {promo.headline && <h1 className="text-xl font-semibold tracking-tight">{promo.headline}</h1>}
               {promo.body_copy && <p className="text-sm whitespace-pre-wrap mt-1">{promo.body_copy}</p>}
             </div>

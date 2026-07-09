@@ -13,7 +13,7 @@ export default function CoverFooterBar({ promo, imageUrls, logoUrl }: LayoutProp
           <img src={image} alt="" className="w-full h-full object-contain" />
         </div>
       )}
-      <div className="flex-[18] min-h-0 flex items-start justify-between gap-4 pt-4">
+      <div className="flex-[18] min-h-0 flex items-start justify-between pt-4">
         <BrandMark logoUrl={logoUrl} brandTitle={promo.brand_title} />
         <ContactLinks promo={promo} align="right" stack />
       </div>

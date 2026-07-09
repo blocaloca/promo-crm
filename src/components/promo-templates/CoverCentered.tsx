@@ -12,10 +12,10 @@ export default function CoverCentered({ promo, imageUrls, logoUrl }: LayoutProps
           <img src={image} alt="" className="w-full h-full object-contain" />
         </div>
       )}
-      <div className="flex-[35] min-h-0 flex flex-col items-center justify-center gap-10 text-center px-4">
-        <BrandMark logoUrl={logoUrl} brandTitle={promo.brand_title} />
+      <div className="flex-[35] min-h-0 flex flex-col items-center justify-center text-center px-4">
+        <BrandMark logoUrl={logoUrl} brandTitle={promo.brand_title} className="mb-10" />
         {(promo.headline || promo.body_copy) && (
-          <div>
+          <div className="mb-10">
             {promo.headline && <h1 className="text-2xl font-semibold tracking-tight">{promo.headline}</h1>}
             {promo.body_copy && <p className="text-sm whitespace-pre-wrap mt-1">{promo.body_copy}</p>}
           </div>
