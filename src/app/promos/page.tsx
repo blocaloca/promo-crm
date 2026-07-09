@@ -148,6 +148,10 @@ export default function Promos() {
     setSaveError("");
     const { data: { user } } = await supabase.auth.getUser();
     const payload: any = { ...draft, org_id: org, owner_id: user!.id, status: "published" };
+    // id is server-generated — never send it explicitly (duplicate() sets it
+    // to undefined as a "this is a new row" sentinel, which the coercion
+    // below would otherwise turn into a literal null and violate NOT NULL)
+    delete payload.id;
     // an `undefined` field (e.g. a deselected logo) is dropped by JSON.stringify
     // and never reaches the update — coerce to null so clearing a field actually persists
     for (const k of Object.keys(payload)) if (payload[k] === undefined) payload[k] = null;
