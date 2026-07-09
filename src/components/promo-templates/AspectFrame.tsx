@@ -40,6 +40,7 @@ export default function AspectFrame({
       style={{ aspectRatio: aspectCss }}
     >
       <div
+        id="promo-scale-wrapper"
         className="absolute top-0 left-0 bg-white"
         style={{ width: DESIGN_WIDTH, aspectRatio: aspectCss, transform: `scale(${scale})`, transformOrigin: "top left" }}
       >

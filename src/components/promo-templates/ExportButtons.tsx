@@ -38,25 +38,33 @@ export default function ExportButtons({ promo, imageUrl }: { promo: PromoLike; i
 
       const node = document.getElementById("promo-export-target");
       if (!node) throw new Error("Nothing to export");
-      // html-to-image rasterizes via an SVG <foreignObject>, which has
-      // long-standing reliability problems on Safari/iOS — cross-origin
-      // images especially can silently fail to embed. html2canvas paints
-      // the DOM onto a canvas directly instead, which works consistently
-      // across browsers including mobile Safari.
-      //
-      // Montserrat is a web font — if html2canvas captures before it's
-      // fully loaded, it measures text with the fallback font but paints
-      // with Montserrat once it arrives, so lines end up overlapping
-      // instead of stacked. document.fonts.ready guarantees it's loaded.
       await document.fonts.ready;
+
+      // AspectFrame renders the card at a fixed design width, then scales
+      // it down via a CSS transform to fit narrow (e.g. mobile) screens.
+      // html2canvas doesn't correctly capture elements nested inside a
+      // scaled-down ancestor — text ends up overlapping instead of
+      // stacked, and it gets dramatically worse the smaller the scale
+      // factor is (barely visible at desktop widths, severe on a phone).
+      // Neutralize the transform for the duration of the capture so
+      // html2canvas always sees the card at its true, unscaled layout.
+      const scaleWrapper = document.getElementById("promo-scale-wrapper");
+      const previousTransform = scaleWrapper?.style.transform;
+      if (scaleWrapper) scaleWrapper.style.transform = "none";
+
       const scale = MAX_EDGE / Math.max(node.offsetWidth, node.offsetHeight);
       const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(node, {
-        scale,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-      });
-      const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
+      let blob: Blob | null;
+      try {
+        const canvas = await html2canvas(node, {
+          scale,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+        });
+        blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
+      } finally {
+        if (scaleWrapper) scaleWrapper.style.transform = previousTransform ?? "";
+      }
       if (!blob) throw new Error("Export failed");
       download(blob, filenameFor(promo));
     } catch {
