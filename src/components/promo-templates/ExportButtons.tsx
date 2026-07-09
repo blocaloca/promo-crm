@@ -52,6 +52,13 @@ export default function ExportButtons({ promo, imageUrl }: { promo: PromoLike; i
       const previousTransform = scaleWrapper?.style.transform;
       if (scaleWrapper) scaleWrapper.style.transform = "none";
 
+      // links are underlined on the live page (a normal clickability cue),
+      // but that underline shouldn't show up in a flat JPG export — strip
+      // it for the duration of the capture only
+      const links = Array.from(node.querySelectorAll("a"));
+      const previousDecorations = links.map((a) => a.style.textDecoration);
+      links.forEach((a) => (a.style.textDecoration = "none"));
+
       const scale = MAX_EDGE / Math.max(node.offsetWidth, node.offsetHeight);
       const html2canvas = (await import("html2canvas")).default;
       let blob: Blob | null;
@@ -64,6 +71,7 @@ export default function ExportButtons({ promo, imageUrl }: { promo: PromoLike; i
         blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
       } finally {
         if (scaleWrapper) scaleWrapper.style.transform = previousTransform ?? "";
+        links.forEach((a, i) => (a.style.textDecoration = previousDecorations[i]));
       }
       if (!blob) throw new Error("Export failed");
       download(blob, filenameFor(promo));

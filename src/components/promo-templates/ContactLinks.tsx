@@ -46,7 +46,7 @@ export default function ContactLinks({
         <a
           key={i}
           href={it.href}
-          className={`inline-block underline text-sm ${itemSpacing}`}
+          className={`inline-block underline print:no-underline text-sm ${itemSpacing}`}
           target={it.external ? "_blank" : undefined}
           rel={it.external ? "noopener noreferrer" : undefined}
         >
