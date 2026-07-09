@@ -43,6 +43,12 @@ export default function ExportButtons({ promo, imageUrl }: { promo: PromoLike; i
       // images especially can silently fail to embed. html2canvas paints
       // the DOM onto a canvas directly instead, which works consistently
       // across browsers including mobile Safari.
+      //
+      // Montserrat is a web font — if html2canvas captures before it's
+      // fully loaded, it measures text with the fallback font but paints
+      // with Montserrat once it arrives, so lines end up overlapping
+      // instead of stacked. document.fonts.ready guarantees it's loaded.
+      await document.fonts.ready;
       const scale = MAX_EDGE / Math.max(node.offsetWidth, node.offsetHeight);
       const html2canvas = (await import("html2canvas")).default;
       const canvas = await html2canvas(node, {
