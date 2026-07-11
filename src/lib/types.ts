@@ -6,7 +6,7 @@ export interface Prospect {
   id: string; name: string; title?: string; company?: string;
   sector?: string; region?: string; tier?: string;
   linkedin_url?: string; email?: string; phone?: string; instagram?: string;
-  state: ProspectState; last_touched?: string;
+  state: ProspectState; last_touched?: string; created_at?: string;
   south_america_relevant?: boolean; notes?: string;
 }
 export interface Promo {

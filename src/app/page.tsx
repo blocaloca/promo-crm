@@ -34,7 +34,11 @@ export default function Prospects() {
 
   const load = useCallback(async () => {
     const org = await getOrgId(); if (!org) return;
-    const { data } = await supabase.from("prospects").select("*").eq("org_id", org).order("last_touched", { ascending: true, nullsFirst: true });
+    const sortNewest = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("sort") === "newest";
+    const query = supabase.from("prospects").select("*").eq("org_id", org);
+    const { data } = sortNewest
+      ? await query.order("created_at", { ascending: false })
+      : await query.order("last_touched", { ascending: true, nullsFirst: true });
     setRows(data ?? []);
     const { data: ls } = await supabase.from("lists").select("id, name").eq("org_id", org).order("name");
     setLists(ls ?? []);
@@ -122,6 +126,7 @@ export default function Prospects() {
           <button className="btn btn-ghost" onClick={exportCsv}>Export CSV ({selected.size})</button>
         )}
         <button className="btn btn-primary" onClick={() => setAdding(!adding)}>+ Prospect</button>
+        <a href="/prospects/import" className="btn btn-ghost">Import CSV</a>
       </div>
 
       {adding && (
