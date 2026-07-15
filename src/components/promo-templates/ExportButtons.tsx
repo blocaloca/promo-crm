@@ -59,6 +59,41 @@ export default function ExportButtons({ promo, imageUrl }: { promo: PromoLike; i
       const previousDecorations = links.map((a) => a.style.textDecoration);
       links.forEach((a) => (a.style.textDecoration = "none"));
 
+      // html2canvas has no support for object-fit at all — confirmed in its
+      // own source, it always does a plain stretch-to-fill drawImage into
+      // the <img>'s box. Every photo here relies on object-contain to avoid
+      // exactly that distortion, so left alone html2canvas stretches any
+      // photo whose natural ratio doesn't match its flex-sized box. Work
+      // around it by temporarily giving each such <img> its own correctly
+      // letterboxed size (replicating what object-contain does), centered
+      // in its box, for the duration of the capture only.
+      const photoImgs = Array.from(node.querySelectorAll("img")).filter(
+        (img) => getComputedStyle(img).objectFit === "contain"
+      );
+      const photoRestores = photoImgs.map((img) => {
+        const parent = img.parentElement;
+        const boxW = img.clientWidth;
+        const boxH = img.clientHeight;
+        const natW = img.naturalWidth;
+        const natH = img.naturalHeight;
+        const prev = {
+          display: parent?.style.display, alignItems: parent?.style.alignItems, justifyContent: parent?.style.justifyContent,
+          width: img.style.width, height: img.style.height,
+        };
+        if (parent && boxW && boxH && natW && natH) {
+          const fit = Math.min(boxW / natW, boxH / natH);
+          parent.style.display = "flex";
+          parent.style.alignItems = "center";
+          parent.style.justifyContent = "center";
+          img.style.width = `${natW * fit}px`;
+          img.style.height = `${natH * fit}px`;
+        }
+        return () => {
+          if (parent) { parent.style.display = prev.display ?? ""; parent.style.alignItems = prev.alignItems ?? ""; parent.style.justifyContent = prev.justifyContent ?? ""; }
+          img.style.width = prev.width ?? ""; img.style.height = prev.height ?? "";
+        };
+      });
+
       const scale = MAX_EDGE / Math.max(node.offsetWidth, node.offsetHeight);
       const html2canvas = (await import("html2canvas")).default;
       let blob: Blob | null;
@@ -72,6 +107,7 @@ export default function ExportButtons({ promo, imageUrl }: { promo: PromoLike; i
       } finally {
         if (scaleWrapper) scaleWrapper.style.transform = previousTransform ?? "";
         links.forEach((a, i) => (a.style.textDecoration = previousDecorations[i]));
+        photoRestores.forEach((restore) => restore());
       }
       if (!blob) throw new Error("Export failed");
       download(blob, filenameFor(promo));
