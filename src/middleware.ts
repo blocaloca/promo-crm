@@ -1,28 +1,28 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  SESSION_COOKIE_NAME,
+  createSessionCookieValue,
+  sessionCookieOptions,
+  verifySessionCookieValue,
+} from "@/lib/session";
 
 export async function middleware(req: NextRequest) {
-  let res = NextResponse.next({ request: req });
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => req.cookies.getAll(),
-        setAll: (all: { name: string; value: string; options?: any }[]) => {
-          all.forEach(({ name, value }) => req.cookies.set(name, value));
-          res = NextResponse.next({ request: req });
-          all.forEach(({ name, value, options }) => res.cookies.set(name, value, options));
-        },
-      },
-    }
-  );
-  const { data: { user } } = await supabase.auth.getUser();
   const path = req.nextUrl.pathname;
-  const isPublic = path.startsWith("/login") || path.startsWith("/p/") || path.startsWith("/auth");
-  if (!user && !isPublic) {
-    const url = req.nextUrl.clone(); url.pathname = "/login"; return NextResponse.redirect(url);
+  const isPublic = path.startsWith("/login") || path.startsWith("/p/");
+  const cookie = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+  const valid = await verifySessionCookieValue(cookie);
+
+  if (!valid) {
+    if (isPublic) return NextResponse.next();
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
   }
+
+  // sliding expiry: reissue the cookie on every authenticated request
+  const res = NextResponse.next();
+  res.cookies.set(SESSION_COOKIE_NAME, await createSessionCookieValue(), sessionCookieOptions);
   return res;
 }
+
 export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.png$).*)"] };

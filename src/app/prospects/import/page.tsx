@@ -1,8 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import Papa from "papaparse";
-import { createClient } from "@/lib/supabase-browser";
-import { getOrgId } from "@/lib/org";
+import { listProspectsForDuplicateCheck, bulkInsertProspects, type ImportRow } from "@/actions/prospects";
 import type { Prospect } from "@/lib/types";
 
 const KNOWN_FIELDS = [
@@ -63,7 +62,6 @@ function findDuplicate(row: ParsedRow, existing: ExistingProspect[]): ExistingPr
 }
 
 export default function ImportProspects() {
-  const supabase = createClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<ParsedRow[] | null>(null);
   const [checking, setChecking] = useState(false);
@@ -107,13 +105,11 @@ export default function ImportProspects() {
 
   async function checkDuplicates(parsed: ParsedRow[]) {
     setChecking(true);
-    const org = await getOrgId();
-    if (!org) { setChecking(false); return; }
-    const { data: existing } = await supabase.from("prospects").select("id, name, company, linkedin_url").eq("org_id", org);
+    const existing = await listProspectsForDuplicateCheck();
     setRows(
       parsed.map((r) => {
         if (r.missingName) return r;
-        const dup = findDuplicate(r, existing ?? []);
+        const dup = findDuplicate(r, existing);
         return dup ? { ...r, duplicateOf: dup, skipDuplicate: true } : r;
       })
     );
@@ -128,25 +124,20 @@ export default function ImportProspects() {
     if (!rows) return;
     setImporting(true);
     setError("");
-    const org = await getOrgId();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!org || !user) { setError("Couldn't determine your organization — try refreshing."); setImporting(false); return; }
 
     const toInsert = rows.filter((r) => !r.missingName && !(r.duplicateOf && r.skipDuplicate));
     const skippedDuplicate = rows.filter((r) => r.duplicateOf && r.skipDuplicate).length;
     const skippedMissingName = rows.filter((r) => r.missingName).length;
 
     if (toInsert.length) {
-      const payload = toInsert.map((r) => ({
-        org_id: org, owner_id: user.id,
+      const payload: ImportRow[] = toInsert.map((r) => ({
         name: r.name, title: r.title ?? null, company: r.company ?? null, sector: r.sector ?? null,
         region: r.region ?? null, tier: r.tier ?? null, linkedin_url: r.linkedin_url ?? null,
         email: r.email ?? null, instagram: r.instagram ?? null,
         south_america_relevant: r.south_america_relevant, notes: r.notes ?? null,
-        state: "prospect", last_touched: null,
       }));
-      const { error: insertError } = await supabase.from("prospects").insert(payload);
-      if (insertError) { setError(insertError.message); setImporting(false); return; }
+      const { error: insertError } = await bulkInsertProspects(payload);
+      if (insertError) { setError(insertError); setImporting(false); return; }
     }
     setResult({ added: toInsert.length, skippedDuplicate, skippedMissingName });
     setImporting(false);

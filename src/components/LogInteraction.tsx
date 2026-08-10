@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase-browser";
-import { getOrgId } from "@/lib/org";
+import { listPromos } from "@/actions/promos";
+import { listMessages } from "@/actions/messages";
+import { logInteraction } from "@/actions/interactions";
 import type { Promo, Message, Channel } from "@/lib/types";
 
 const CHANNELS: Channel[] = ["linkedin_dm", "email", "ig_dm", "call", "other"];
@@ -9,7 +10,6 @@ const CHANNELS: Channel[] = ["linkedin_dm", "email", "ig_dm", "call", "other"];
 export default function LogInteraction({
   prospectId, onLogged, compact,
 }: { prospectId: string; onLogged?: () => void; compact?: boolean }) {
-  const supabase = createClient();
   const [promos, setPromos] = useState<Promo[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [promoId, setPromoId] = useState("");
@@ -20,10 +20,8 @@ export default function LogInteraction({
 
   useEffect(() => {
     (async () => {
-      const org = await getOrgId(); if (!org) return;
-      const { data: p } = await supabase.from("promos").select("*").eq("org_id", org).order("created_at", { ascending: false });
-      const { data: m } = await supabase.from("messages").select("*").eq("org_id", org).order("created_at", { ascending: false });
-      setPromos(p ?? []); setMessages(m ?? []);
+      const [p, m] = await Promise.all([listPromos(), listMessages()]);
+      setPromos(p); setMessages(m);
     })();
   }, []);
 
@@ -38,12 +36,8 @@ export default function LogInteraction({
   }
 
   async function log() {
-    const org = await getOrgId(); if (!org) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from("interactions").insert({
-      org_id: org, owner_id: user!.id, prospect_id: prospectId,
-      promo_id: promoId || null, message_id: messageId || null,
-      channel, direction: "outbound", note: note || null,
+    await logInteraction({
+      prospectId, promoId: promoId || null, messageId: messageId || null, channel, note: note || null,
     });
     setNote(""); onLogged?.();
   }

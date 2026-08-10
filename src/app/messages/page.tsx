@@ -1,34 +1,29 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { createClient } from "@/lib/supabase-browser";
-import { getOrgId } from "@/lib/org";
+import { listMessages, createMessage, updateMessage, deleteMessage } from "@/actions/messages";
 import type { Message, MsgType } from "@/lib/types";
 
 const TYPES: MsgType[] = ["intro", "follow_up", "industry", "referral", "reengage"];
 
 export default function Messages() {
-  const supabase = createClient();
   const [rows, setRows] = useState<Message[]>([]);
   const [draft, setDraft] = useState<Partial<Message>>({ msg_type: "intro" });
   const [editing, setEditing] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const org = await getOrgId(); if (!org) return;
-    const { data } = await supabase.from("messages").select("*").eq("org_id", org).order("msg_type");
-    setRows(data ?? []);
+    setRows(await listMessages());
   }, []);
   useEffect(() => { load(); }, [load]);
 
   async function save() {
-    const org = await getOrgId(); if (!org || !draft.label || !draft.body) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (editing) await supabase.from("messages").update(draft).eq("id", editing);
-    else await supabase.from("messages").insert({ ...draft, org_id: org, owner_id: user!.id });
+    if (!draft.label || !draft.body) return;
+    if (editing) await updateMessage(editing, draft);
+    else await createMessage(draft);
     setDraft({ msg_type: "intro" }); setEditing(null); load();
   }
   async function del(id: string, label: string) {
     if (!window.confirm(`Delete "${label}"? This can't be undone.`)) return;
-    await supabase.from("messages").delete().eq("id", id); load();
+    await deleteMessage(id); load();
   }
 
   return (

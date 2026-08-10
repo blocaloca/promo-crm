@@ -1,28 +1,26 @@
 # Promo CRM
 
 Internal outreach + promo organizer. Phone-first CRM, promo builder, worklists you walk one-by-one.
-Stack: Next.js 14 (App Router) · Supabase (Auth + Postgres + Storage) · Tailwind · PWA.
+Stack: Next.js 14 (App Router) · Neon Postgres · Vercel Blob · Tailwind · PWA.
 
 ## What's built (v1)
 
 - **Prospects** — search/filter, states (prospect → contacted → in_convo → booked → dormant), quick add, **going-cold view** (contacted/in_convo, untouched 21+ days), inline "reach out" (copy message+link, log send).
-- **Media library** — upload from phone camera roll or library, **downscaled on-device** before upload (long edge 2000px, q0.8) so it's fast on cell data. Tagged thumbnail grid, private bucket via signed URLs.
+- **Media library** — upload from phone camera roll or library, **downscaled on-device** before upload (long edge 2000px, q0.8) so it's fast on cell data. Tagged thumbnail grid, stored as public Vercel Blob objects.
 - **Promo builder** — one placeholder template (design your real set next), name/aspect/headline/body/CTA, **OG preview fields** (the LinkedIn card), thumbnail asset picker with slot ordering, draft/publish. Publishing mints a public token.
 - **Public promo page** `/p/{token}` — server-rendered, light/branded (distinct from the dark cockpit), correct OG + twitter:summary_large_image tags so pasted links preview well. Bumps view_count.
 - **Messages** — typed copy library (intro / follow_up / industry / referral / reengage), grouped.
 - **Lists** — named worklists; add prospects by filter or hand-pick; progress counts.
 - **Run view** `/lists/{id}/run` — one prospect at a time, progress bar, prev/skip, **logging a send marks done + advances**. The one-by-one walk. Not a blast.
 
-Every table carries `org_id` + RLS from day one — solo now, multi-tenant when you flip it on. Auth is Supabase magic-link; first login bootstraps an org.
+Single-user app: `org_id`/`owner_id` are hardcoded constants (`src/lib/constants.ts`), not multi-tenant RLS — auth is a single shared password, not per-user accounts.
 
 ## Setup
 
-1. Create a Supabase project.
-2. Run the migrations in order in the SQL editor:
-   - `supabase/migrations/0001_init.sql`  (schema + RLS)
-   - `supabase/migrations/0002_storage.sql`  (buckets + storage policies)
-3. Copy `.env.local.example` → `.env.local`, fill in your project URL + anon key.
-4. `npm install` then `npm run dev`. Open http://localhost:3000, sign in with your email.
+1. Create a Neon Postgres project and a Vercel Blob store, and link both to this Vercel project.
+2. `vercel env pull .env.local` to pull `DATABASE_URL`/`DATABASE_URL_UNPOOLED`/`BLOB_READ_WRITE_TOKEN`.
+3. Generate `SESSION_SECRET` (`openssl rand -base64 32`) and `APP_PASSWORD_HASH` (scrypt hash, `salt:hash` hex) and add them as env vars.
+4. `npm install` then `npm run dev`. Open http://localhost:3000, sign in with your password.
 
 ## Outbound flow (v1, no API needed)
 
@@ -40,4 +38,4 @@ Pick a promo + message + channel → **Copy message + link** → paste into Link
 
 - Downscale is client-side (your choice) — raw files never leave the device.
 - View-tracking is a naive counter; swap for a logged pageview table if you want per-open timestamps.
-- `og:image` uses a 1-hour signed URL from the private bucket. For long-lived link previews, copy the OG hero into the public `promo-public` bucket on publish and point `og_image_path` there.
+- `og:image` points directly at a Vercel Blob URL — public, non-expiring, no signed-URL refresh needed.

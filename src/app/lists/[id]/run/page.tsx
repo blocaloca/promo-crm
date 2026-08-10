@@ -1,30 +1,21 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase-browser";
-import type { Prospect } from "@/lib/types";
+import { getListRunData, markListMemberDone, type RunListMember } from "@/actions/lists";
 import LogInteraction from "@/components/LogInteraction";
 
-type Member = Prospect & { done: boolean; position: number | null };
-
 export default function RunList() {
-  const supabase = createClient();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [name, setName] = useState("");
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<RunListMember[]>([]);
   const [idx, setIdx] = useState(0);
 
   const load = useCallback(async () => {
-    const { data: list } = await supabase.from("lists").select("name").eq("id", id).single();
-    setName(list?.name ?? "");
-    const { data: lm } = await supabase.from("list_members").select("prospect_id, done, position").eq("list_id", id).order("position", { nullsFirst: false });
-    const ids = (lm ?? []).map((r) => r.prospect_id);
-    if (!ids.length) { setMembers([]); return; }
-    const { data: ps } = await supabase.from("prospects").select("*").in("id", ids);
-    const merged = (lm ?? []).map((m) => ({ ...(ps?.find((p) => p.id === m.prospect_id) as Prospect), done: m.done, position: m.position }));
-    setMembers(merged);
-    const firstUndone = merged.findIndex((m) => !m.done);
+    const { name, members } = await getListRunData(id);
+    setName(name);
+    setMembers(members);
+    const firstUndone = members.findIndex((m) => !m.done);
     setIdx(firstUndone === -1 ? 0 : firstUndone);
   }, [id]);
   useEffect(() => { load(); }, [load]);
@@ -34,7 +25,7 @@ export default function RunList() {
 
   async function markDoneAndAdvance() {
     if (!current) return;
-    await supabase.from("list_members").update({ done: true }).eq("list_id", id).eq("prospect_id", current.id);
+    await markListMemberDone(id, current.id);
     setMembers((ms) => ms.map((m) => m.id === current.id ? { ...m, done: true } : m));
     const next = members.findIndex((m, i) => i > idx && !m.done);
     if (next !== -1) setIdx(next);

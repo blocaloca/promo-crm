@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { createClient } from "@/lib/supabase-browser";
-import { getOrgId } from "@/lib/org";
+import {
+  listProspects, createProspect, updateProspectState, updateProspect, deleteProspect,
+} from "@/actions/prospects";
+import { listListsBasic, getListMembershipMap, addToList, removeFromList } from "@/actions/lists";
 import type { Prospect, ProspectState, ListRow } from "@/lib/types";
 import LogInteraction from "@/components/LogInteraction";
 
@@ -18,7 +20,6 @@ function csvEscape(v: string) {
 }
 
 export default function Prospects() {
-  const supabase = createClient();
   const [rows, setRows] = useState<Prospect[]>([]);
   const [lists, setLists] = useState<ListRow[]>([]);
   const [memberships, setMemberships] = useState<Record<string, string[]>>({});
@@ -33,58 +34,44 @@ export default function Prospects() {
   const [editDraft, setEditDraft] = useState<Partial<Prospect>>({});
 
   const load = useCallback(async () => {
-    const org = await getOrgId(); if (!org) return;
     const sortNewest = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("sort") === "newest";
-    const query = supabase.from("prospects").select("*").eq("org_id", org);
-    const { data } = sortNewest
-      ? await query.order("created_at", { ascending: false })
-      : await query.order("last_touched", { ascending: true, nullsFirst: true });
-    setRows(data ?? []);
-    const { data: ls } = await supabase.from("lists").select("id, name").eq("org_id", org).order("name");
-    setLists(ls ?? []);
-    const listIds = (ls ?? []).map((l) => l.id);
-    const mem: Record<string, string[]> = {};
-    if (listIds.length) {
-      const { data: lm } = await supabase.from("list_members").select("list_id, prospect_id").in("list_id", listIds);
-      for (const r of lm ?? []) { (mem[r.prospect_id] ??= []).push(r.list_id); }
-    }
+    const [data, ls, mem] = await Promise.all([listProspects(sortNewest), listListsBasic(), getListMembershipMap()]);
+    setRows(data);
+    setLists(ls);
     setMemberships(mem);
   }, []);
   useEffect(() => { load(); }, [load]);
 
   async function save() {
-    const org = await getOrgId(); if (!org || !draft.name) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from("prospects").insert({ ...draft, org_id: org, owner_id: user!.id });
+    if (!draft.name) return;
+    await createProspect(draft);
     setDraft({ name: "", state: "prospect" }); setAdding(false); load();
   }
   async function setState(id: string, state: ProspectState) {
-    await supabase.from("prospects").update({ state }).eq("id", id); load();
+    await updateProspectState(id, state); load();
   }
   function startEdit(r: Prospect) { setEditingId(r.id); setEditDraft({ ...r }); setOpen(null); }
   function cancelEdit() { setEditingId(null); setEditDraft({}); }
   async function saveEdit() {
     if (!editingId || !editDraft.name) return;
-    const { id, org_id, owner_id, created_at, updated_at, state, last_touched, ...patch } = editDraft as any;
-    await supabase.from("prospects").update(patch).eq("id", editingId);
+    await updateProspect(editingId, editDraft);
     setEditingId(null); setEditDraft({}); load();
   }
-  async function deleteProspect(id: string) {
+  async function deleteProspectRow(id: string) {
     if (!window.confirm("Delete this prospect? This also removes their interaction history and list memberships. This can't be undone.")) return;
-    await supabase.from("prospects").delete().eq("id", id);
+    await deleteProspect(id);
     setSelected((s) => { const n = new Set(s); n.delete(id); return n; });
     if (open === id) setOpen(null);
     if (editingId === id) cancelEdit();
     load();
   }
-  async function addToList(prospectId: string, listId: string) {
+  async function addToListRow(prospectId: string, listId: string) {
     if (!listId) return;
-    const { count } = await supabase.from("list_members").select("*", { count: "exact", head: true }).eq("list_id", listId);
-    await supabase.from("list_members").insert({ list_id: listId, prospect_id: prospectId, position: count ?? 0 });
+    await addToList(prospectId, listId);
     load();
   }
-  async function removeFromList(prospectId: string, listId: string) {
-    await supabase.from("list_members").delete().eq("list_id", listId).eq("prospect_id", prospectId);
+  async function removeFromListRow(prospectId: string, listId: string) {
+    await removeFromList(prospectId, listId);
     load();
   }
   function toggleSelected(id: string) {
@@ -171,7 +158,7 @@ export default function Prospects() {
                 <button className="btn btn-ghost text-sm" onClick={() => (editingId === r.id ? cancelEdit() : startEdit(r))}>
                   {editingId === r.id ? "Cancel" : "Edit"}
                 </button>
-                <button className="btn btn-ghost text-sm" onClick={() => deleteProspect(r.id)}>Delete</button>
+                <button className="btn btn-ghost text-sm" onClick={() => deleteProspectRow(r.id)}>Delete</button>
               </div>
 
               <div className="flex items-center gap-1 flex-wrap mt-2">
@@ -181,12 +168,12 @@ export default function Prospects() {
                   return (
                     <span key={lid} className="chip text-muted flex items-center gap-1">
                       {l.name}
-                      <button onClick={() => removeFromList(r.id, lid)} className="hover:text-cold" aria-label={`remove from ${l.name}`}>×</button>
+                      <button onClick={() => removeFromListRow(r.id, lid)} className="hover:text-cold" aria-label={`remove from ${l.name}`}>×</button>
                     </span>
                   );
                 })}
                 {availableLists.length > 0 && (
-                  <select className="input w-auto text-xs" value="" onChange={(e) => addToList(r.id, e.target.value)}>
+                  <select className="input w-auto text-xs" value="" onChange={(e) => addToListRow(r.id, e.target.value)}>
                     <option value="">+ add to list…</option>
                     {availableLists.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
                   </select>

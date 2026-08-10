@@ -1,49 +1,36 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase-browser";
-import { getOrgId } from "@/lib/org";
+import { listListsWithCounts, createList, deleteList, getListMembers, removeFromList } from "@/actions/lists";
 import type { ListRow, Prospect } from "@/lib/types";
 
 export default function Lists() {
-  const supabase = createClient();
   const [lists, setLists] = useState<(ListRow & { count: number; done: number })[]>([]);
   const [name, setName] = useState("");
   const [viewing, setViewing] = useState<string | null>(null);
   const [members, setMembers] = useState<Prospect[]>([]);
 
   const load = useCallback(async () => {
-    const org = await getOrgId(); if (!org) return;
-    const { data: ls } = await supabase.from("lists").select("*").eq("org_id", org).order("created_at", { ascending: false });
-    const withCounts = await Promise.all((ls ?? []).map(async (l) => {
-      const { data: m } = await supabase.from("list_members").select("done").eq("list_id", l.id);
-      return { ...l, count: m?.length ?? 0, done: (m ?? []).filter((x) => x.done).length };
-    }));
-    setLists(withCounts);
+    setLists(await listListsWithCounts());
   }, []);
   useEffect(() => { load(); }, [load]);
 
   async function create() {
-    const org = await getOrgId(); if (!org || !name) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from("lists").insert({ org_id: org, owner_id: user!.id, name });
+    if (!name) return;
+    await createList(name);
     setName(""); load();
   }
   async function openView(listId: string) {
     setViewing(viewing === listId ? null : listId);
     if (viewing === listId) return;
-    const { data: lm } = await supabase.from("list_members").select("prospect_id").eq("list_id", listId).order("position");
-    const ids = (lm ?? []).map((r) => r.prospect_id);
-    if (!ids.length) { setMembers([]); return; }
-    const { data: ps } = await supabase.from("prospects").select("*").in("id", ids);
-    setMembers(ids.map((id) => ps?.find((p) => p.id === id)).filter(Boolean) as Prospect[]);
+    setMembers(await getListMembers(listId));
   }
   async function removeMember(listId: string, prospectId: string) {
-    await supabase.from("list_members").delete().eq("list_id", listId).eq("prospect_id", prospectId);
+    await removeFromList(prospectId, listId);
     setMembers((m) => m.filter((p) => p.id !== prospectId));
     load();
   }
-  async function del(id: string) { await supabase.from("lists").delete().eq("id", id); if (viewing === id) setViewing(null); load(); }
+  async function del(id: string) { await deleteList(id); if (viewing === id) setViewing(null); load(); }
 
   return (
     <div>

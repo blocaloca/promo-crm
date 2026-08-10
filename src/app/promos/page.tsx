@@ -1,16 +1,13 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { createClient } from "@/lib/supabase-browser";
-import { getOrgId } from "@/lib/org";
+import { listPromos, getPromoAssetIds, savePromo, deletePromo } from "@/actions/promos";
+import { listAssets } from "@/actions/media";
 import {
   PromoRenderer, AspectFrame, getTemplate, DEFAULT_TEMPLATE_KEY,
   PROMO_TEMPLATES,
 } from "@/components/promo-templates";
 import type { PromoTemplateKey } from "@/components/promo-templates";
 import type { Promo, Asset } from "@/lib/types";
-
-const BUCKET = "promo-assets";
-const token = () => Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 6);
 
 // grey-box mini previews of each fixed layout — no real photos, just shape
 function TemplateThumb({ templateKey }: { templateKey: PromoTemplateKey }) {
@@ -83,28 +80,20 @@ function TemplateThumb({ templateKey }: { templateKey: PromoTemplateKey }) {
 }
 
 export default function Promos() {
-  const supabase = createClient();
   const [rows, setRows] = useState<Promo[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
-  const [thumbs, setThumbs] = useState<Record<string, string>>({});
   const [editing, setEditing] = useState<Promo | null>(null);
   const [saveError, setSaveError] = useState("");
   const [picked, setPicked] = useState<string[]>([]);
   const [draft, setDraft] = useState<Partial<Promo>>({ template_key: DEFAULT_TEMPLATE_KEY, aspect_ratio: getTemplate(DEFAULT_TEMPLATE_KEY).defaultAspectRatio ?? undefined });
 
   const load = useCallback(async () => {
-    const org = await getOrgId(); if (!org) return;
-    const { data: p } = await supabase.from("promos").select("*").eq("org_id", org).order("created_at", { ascending: false });
-    const { data: a } = await supabase.from("assets").select("*").eq("org_id", org).order("created_at", { ascending: false });
-    setRows(p ?? []); setAssets(a ?? []);
-    const map: Record<string, string> = {};
-    for (const as of a ?? []) {
-      const { data: s } = await supabase.storage.from(BUCKET).createSignedUrl(as.thumb_path, 3600);
-      if (s) map[as.id] = s.signedUrl;
-    }
-    setThumbs(map);
+    const [p, a] = await Promise.all([listPromos(), listAssets()]);
+    setRows(p); setAssets(a);
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  const thumbs = Object.fromEntries(assets.map((a) => [a.id, a.thumb_path]));
 
   function startNew() {
     setEditing({} as Promo);
@@ -113,12 +102,10 @@ export default function Promos() {
   }
   async function edit(p: Promo) {
     setEditing(p); setDraft(p);
-    const { data } = await supabase.from("promo_assets").select("asset_id, slot").eq("promo_id", p.id).order("slot");
-    setPicked((data ?? []).map((r) => r.asset_id));
+    setPicked(await getPromoAssetIds(p.id));
   }
   async function duplicate(p: Promo) {
-    const { data } = await supabase.from("promo_assets").select("asset_id, slot").eq("promo_id", p.id).order("slot");
-    setPicked((data ?? []).map((r) => r.asset_id));
+    setPicked(await getPromoAssetIds(p.id));
     setEditing({} as Promo);
     setDraft({
       ...p,
@@ -131,7 +118,7 @@ export default function Promos() {
   }
   async function del(p: Promo) {
     if (!window.confirm(`Delete "${p.name}"? This can't be undone.`)) return;
-    await supabase.from("promos").delete().eq("id", p.id);
+    await deletePromo(p.id);
     load();
   }
 
@@ -144,36 +131,32 @@ export default function Promos() {
   // promo is always shareable as soon as it has been saved once
   async function save(closeAfter: boolean) {
     if (!draft.name) { setSaveError("Promo name is required."); return; }
-    const org = await getOrgId(); if (!org) { setSaveError("Couldn't determine your organization — try refreshing."); return; }
     setSaveError("");
-    const { data: { user } } = await supabase.auth.getUser();
-    const payload: any = { ...draft, org_id: org, owner_id: user!.id, status: "published" };
-    // id is server-generated — never send it explicitly (duplicate() sets it
-    // to undefined as a "this is a new row" sentinel, which the coercion
-    // below would otherwise turn into a literal null and violate NOT NULL)
-    delete payload.id;
-    // an `undefined` field (e.g. a deselected logo) is dropped by JSON.stringify
-    // and never reaches the update — coerce to null so clearing a field actually persists
-    for (const k of Object.keys(payload)) if (payload[k] === undefined) payload[k] = null;
-    if (!payload.public_token) payload.public_token = token();
-    let promoId = (editing as Promo)?.id;
-    if (promoId) {
-      const { error } = await supabase.from("promos").update(payload).eq("id", promoId);
-      if (error) { setSaveError(error.message); return; }
-    } else {
-      const { data, error } = await supabase.from("promos").insert(payload).select("id").single();
-      if (error || !data) { setSaveError(error?.message ?? "Save failed"); return; }
-      promoId = data.id;
-    }
-    // rewrite slots
-    await supabase.from("promo_assets").delete().eq("promo_id", promoId);
-    if (picked.length) await supabase.from("promo_assets").insert(picked.map((asset_id, slot) => ({ promo_id: promoId, asset_id, slot })));
+    const { id, publicToken, error } = await savePromo({
+      id: (editing as Promo)?.id,
+      name: draft.name,
+      template_key: draft.template_key ?? DEFAULT_TEMPLATE_KEY,
+      aspect_ratio: draft.aspect_ratio ?? null,
+      headline: draft.headline ?? null,
+      body_copy: draft.body_copy ?? null,
+      link_url_1: draft.link_url_1 ?? null,
+      link_url_2: draft.link_url_2 ?? null,
+      contact_phone: draft.contact_phone ?? null,
+      angle: draft.angle ?? null,
+      og_title: draft.og_title ?? null,
+      og_description: draft.og_description ?? null,
+      brand_title: draft.brand_title ?? null,
+      logo_asset_id: draft.logo_asset_id ?? null,
+      public_token: draft.public_token ?? null,
+      assetIds: picked,
+    });
+    if (error) { setSaveError(error); return; }
     if (closeAfter) {
       setEditing(null);
     } else {
       // stay open — carry the assigned id/public_token forward so the next
       // save updates this row instead of inserting a duplicate
-      const saved = { ...draft, ...payload, id: promoId } as Promo;
+      const saved = { ...draft, id, public_token: publicToken, status: "published" } as Promo;
       setEditing(saved);
       setDraft(saved);
     }
